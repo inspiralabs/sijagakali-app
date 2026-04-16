@@ -3,17 +3,25 @@ import { Waves } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '@/lib/authContext';
+import { toast } from 'sonner';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock login — just redirect
-    navigate('/dashboard');
+    const success = login(email, password);
+    if (success) {
+      toast.success('Berhasil masuk sebagai Admin');
+      navigate('/dashboard');
+    } else {
+      toast.error('Email atau kata sandi salah');
+    }
   };
 
   return (
@@ -24,7 +32,7 @@ export default function Login() {
             <Waves className="h-10 w-10" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">SiJagaAir</h1>
-          <p className="text-xs text-muted-foreground">Sistem Informasi Jaga Air — Early Warning System</p>
+          <p className="text-xs text-muted-foreground">Login Admin — Early Warning System</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
@@ -52,6 +60,12 @@ export default function Login() {
             Masuk
           </Button>
         </form>
+
+        <div className="mt-4 text-center">
+          <Link to="/public" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+            ← Kembali ke Dashboard Publik
+          </Link>
+        </div>
       </Card>
     </div>
   );
