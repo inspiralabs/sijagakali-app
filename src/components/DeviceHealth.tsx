@@ -21,7 +21,7 @@ export function DeviceHealth({ devices }: DeviceHealthProps) {
                 <div className="flex items-center gap-2">
                   <Battery className="h-3.5 w-3.5" />
                   <div className="flex-1">
-                    <Progress value={d.battery} className="h-1.5" indicatorClassName={battColor} />
+                    <Progress value={d.battery} className="h-1.5" />
                   </div>
                   <span>{d.battery}%</span>
                 </div>
