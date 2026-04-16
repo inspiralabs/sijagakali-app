@@ -97,3 +97,12 @@
 .animate-live-dot {
   animation: live-dot 2s ease-in-out infinite;
 }
+
+@keyframes flash-danger {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: hsl(var(--status-bahaya) / 0.08); }
+}
+
+.animate-flash-danger {
+  animation: flash-danger 1s ease-in-out infinite;
+}
