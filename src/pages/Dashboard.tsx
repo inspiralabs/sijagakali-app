@@ -20,7 +20,7 @@ export default function Dashboard() {
 
         <WaterChart devices={devices} histories={histories} />
         <DeviceHealth devices={devices} />
-        <AlertLog alerts={alerts.slice(0, 12)} />
+        <AlertLog alerts={alerts.slice(0, 5)} />
       </div>
     </AppLayout>
   );
