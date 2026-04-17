@@ -85,18 +85,20 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
 
     if (newAlerts.length) {
       setAlerts(prev => [...newAlerts, ...prev].slice(0, 500));
-      newAlerts.forEach(a => {
-        const cfg = STATUS_CONFIG[a.status];
-        const fn =
-          a.status === 'bahaya' ? toast.error :
-          a.status === 'siaga' ? toast.warning :
-          a.status === 'waspada' ? toast.warning :
-          toast.success;
-        fn(`${cfg.siagaLabel} — ${a.deviceName}`, {
-          description: a.description,
-          duration: a.status === 'bahaya' ? 8000 : 4000,
+      if (notifyRef.current) {
+        newAlerts.forEach(a => {
+          const cfg = STATUS_CONFIG[a.status];
+          const fn =
+            a.status === 'bahaya' ? toast.error :
+            a.status === 'siaga' ? toast.warning :
+            a.status === 'waspada' ? toast.warning :
+            toast.success;
+          fn(`${cfg.siagaLabel} — ${a.deviceName}`, {
+            description: a.description,
+            duration: a.status === 'bahaya' ? 8000 : 4000,
+          });
         });
-      });
+      }
     }
   }, []);
 
