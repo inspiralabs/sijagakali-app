@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { Device, STATUS_CONFIG } from '@/lib/types';
-import { AlertTriangle, Volume2, VolumeX, X } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Device } from '@/lib/types';
+import { AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface DangerAlarmProps {
@@ -9,54 +9,13 @@ interface DangerAlarmProps {
 
 export function DangerAlarm({ devices }: DangerAlarmProps) {
   const [dismissed, setDismissed] = useState<string[]>([]);
-  const [muted, setMuted] = useState(false);
-  const audioRef = useRef<AudioContext | null>(null);
-  const oscillatorRef = useRef<OscillatorNode | null>(null);
   const notifiedRef = useRef<Set<string>>(new Set());
 
   const bahayaDevices = devices.filter(
     d => d.status === 'bahaya' && !dismissed.includes(d.id)
   );
 
-  const playAlarm = useCallback(() => {
-    if (muted || audioRef.current) return;
-    try {
-      const ctx = new AudioContext();
-      audioRef.current = ctx;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'square';
-      osc.frequency.value = 800;
-      gain.gain.value = 0.15;
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      // Siren effect
-      const now = ctx.currentTime;
-      for (let i = 0; i < 20; i++) {
-        osc.frequency.setValueAtTime(800, now + i * 0.5);
-        osc.frequency.linearRampToValueAtTime(1200, now + i * 0.5 + 0.25);
-        osc.frequency.linearRampToValueAtTime(800, now + i * 0.5 + 0.5);
-      }
-      osc.start();
-      oscillatorRef.current = osc;
-    } catch (e) {
-      // Audio not available
-    }
-  }, [muted]);
-
-  const stopAlarm = useCallback(() => {
-    if (oscillatorRef.current) {
-      oscillatorRef.current.stop();
-      oscillatorRef.current = null;
-    }
-    if (audioRef.current) {
-      audioRef.current.close();
-      audioRef.current = null;
-    }
-  }, []);
-
-  // Browser notification
+  // Browser notification (visual only — no sound)
   useEffect(() => {
     const newBahaya = devices.filter(
       d => d.status === 'bahaya' && !notifiedRef.current.has(d.id)
@@ -71,6 +30,7 @@ export function DangerAlarm({ devices }: DangerAlarmProps) {
           body: `${d.name} (${d.location}) — Level air ${d.waterLevel} cm telah melewati ambang AWAS!`,
           icon: '/favicon.ico',
           tag: `bahaya-${d.id}`,
+          silent: true,
         });
       });
     } else if ('Notification' in window && Notification.permission !== 'denied') {
@@ -78,17 +38,7 @@ export function DangerAlarm({ devices }: DangerAlarmProps) {
     }
   }, [devices]);
 
-  // Play/stop alarm
-  useEffect(() => {
-    if (bahayaDevices.length > 0 && !muted) {
-      playAlarm();
-    } else {
-      stopAlarm();
-    }
-    return () => stopAlarm();
-  }, [bahayaDevices.length, muted, playAlarm, stopAlarm]);
-
-  // Remove from notified when no longer bahaya
+  // Cleanup notified set when device leaves bahaya
   useEffect(() => {
     const currentBahaya = new Set(devices.filter(d => d.status === 'bahaya').map(d => d.id));
     notifiedRef.current.forEach(id => {
@@ -114,27 +64,14 @@ export function DangerAlarm({ devices }: DangerAlarmProps) {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-destructive-foreground hover:bg-destructive-foreground/20"
-                onClick={() => setMuted(!muted)}
-              >
-                {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-destructive-foreground hover:bg-destructive-foreground/20"
-                onClick={() => {
-                  setDismissed(prev => [...prev, ...bahayaDevices.map(d => d.id)]);
-                  stopAlarm();
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-destructive-foreground hover:bg-destructive-foreground/20"
+              onClick={() => setDismissed(prev => [...prev, ...bahayaDevices.map(d => d.id)])}
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>

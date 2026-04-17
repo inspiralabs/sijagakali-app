@@ -23,7 +23,7 @@ const App = () => (
     <ThemeProvider>
       <TooltipProvider>
         <Toaster />
-        <Sonner position="top-right" richColors closeButton />
+        <Sonner position="bottom-right" richColors closeButton offset={24} />
         <AuthProvider>
           <LiveDataProvider>
             <BrowserRouter>

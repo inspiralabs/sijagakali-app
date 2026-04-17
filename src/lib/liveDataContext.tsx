@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Device, AlertEvent, WaterReading, StatusLevel, getStatusFromLevel, STATUS_CONFIG } from './types';
 import { mockDevices, mockAlerts, generateWaterHistory, buildAlert } from './mockData';
+import { useAuth } from './authContext';
 
 interface LiveDataCtx {
   devices: Device[];
@@ -25,6 +27,11 @@ const HISTORY_CAP = 200;
  * over ~2 minutes, triggering toasts/notifications continuously.
  */
 export function LiveDataProvider({ children }: { children: ReactNode }) {
+  const { isLoggedIn } = useAuth();
+  const location = useLocation();
+  const isAuthRoute = !location.pathname.startsWith('/login') && !location.pathname.startsWith('/public');
+  const notificationsEnabled = isLoggedIn && isAuthRoute;
+
   const [devices, setDevices] = useState<Device[]>(() =>
     mockDevices.map(d => ({ ...d, lastSeen: new Date().toISOString() }))
   );
@@ -37,6 +44,8 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
   const [lastUpdated, setLastUpdated] = useState<string>(new Date().toISOString());
 
   const tickRef = useRef(0);
+  const notifyRef = useRef(notificationsEnabled);
+  useEffect(() => { notifyRef.current = notificationsEnabled; }, [notificationsEnabled]);
 
   const tick = useCallback(() => {
     tickRef.current += 1;
@@ -76,18 +85,20 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
 
     if (newAlerts.length) {
       setAlerts(prev => [...newAlerts, ...prev].slice(0, 500));
-      newAlerts.forEach(a => {
-        const cfg = STATUS_CONFIG[a.status];
-        const fn =
-          a.status === 'bahaya' ? toast.error :
-          a.status === 'siaga' ? toast.warning :
-          a.status === 'waspada' ? toast.warning :
-          toast.success;
-        fn(`${cfg.siagaLabel} — ${a.deviceName}`, {
-          description: a.description,
-          duration: a.status === 'bahaya' ? 8000 : 4000,
+      if (notifyRef.current) {
+        newAlerts.forEach(a => {
+          const cfg = STATUS_CONFIG[a.status];
+          const fn =
+            a.status === 'bahaya' ? toast.error :
+            a.status === 'siaga' ? toast.warning :
+            a.status === 'waspada' ? toast.warning :
+            toast.success;
+          fn(`${cfg.siagaLabel} — ${a.deviceName}`, {
+            description: a.description,
+            duration: a.status === 'bahaya' ? 8000 : 4000,
+          });
         });
-      });
+      }
     }
   }, []);
 
