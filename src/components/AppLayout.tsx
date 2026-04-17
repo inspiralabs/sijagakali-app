@@ -1,5 +1,5 @@
-import { ReactNode, useEffect } from 'react';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { ReactNode, useEffect, useState } from 'react';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { TopBar } from './TopBar';
 import { MobileNav } from './MobileNav';
@@ -9,24 +9,38 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const SIDEBAR_LS_KEY = 'sja_sidebar_open';
 
-function useDefaultSidebarOpen() {
-  // Desktop ≥1024 → open, tablet 768-1023 → collapsed, mobile handled by Sheet.
+function getInitialOpen(): boolean {
   if (typeof window === 'undefined') return true;
   const stored = localStorage.getItem(SIDEBAR_LS_KEY);
   if (stored !== null) return stored === 'true';
+  // No stored preference: desktop open, tablet collapsed
   return window.innerWidth >= 1024;
 }
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { devices, lastUpdated } = useLiveData();
   const isMobile = useIsMobile();
-  const defaultOpen = useDefaultSidebarOpen();
+  const [open, setOpen] = useState<boolean>(getInitialOpen);
+
+  // Re-evaluate default when crossing tablet/desktop breakpoint if user has no explicit pref
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 1024px)');
+    const onChange = () => {
+      if (localStorage.getItem(SIDEBAR_LS_KEY) === null) {
+        setOpen(mql.matches);
+      }
+    };
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
+
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    localStorage.setItem(SIDEBAR_LS_KEY, String(next));
+  };
 
   return (
-    <SidebarProvider
-      defaultOpen={defaultOpen}
-      onOpenChange={(open) => localStorage.setItem(SIDEBAR_LS_KEY, String(open))}
-    >
+    <SidebarProvider open={open} onOpenChange={handleOpenChange}>
       <DangerAlarm devices={devices} />
       <div className="flex min-h-screen w-full bg-background">
         {!isMobile && <AppSidebar />}
