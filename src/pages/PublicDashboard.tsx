@@ -57,11 +57,11 @@ export default function PublicDashboard() {
           {devices.map(d => <DeviceCard key={d.id} device={d} />)}
         </div>
         <WaterChart devices={devices} histories={histories} />
-        <AlertLog alerts={alerts.slice(0, 10)} />
+        <AlertLog alerts={alerts.slice(0, 5)} />
       </main>
 
       <footer className="border-t border-border bg-card px-4 py-4 text-center text-xs text-muted-foreground">
-        SiJagaAir — Sistem Informasi Jaga Air · Early Warning System · Cileungsi/Cikeas
+        SiJagaAir — Sistem Informasi Jaga Air · Early Warning System · Desa Bojong Kulur
       </footer>
     </div>
   );
