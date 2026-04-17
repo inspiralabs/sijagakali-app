@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Device, AlertEvent, WaterReading, StatusLevel, getStatusFromLevel, STATUS_CONFIG } from './types';
 import { mockDevices, mockAlerts, generateWaterHistory, buildAlert } from './mockData';
+import { useAuth } from './authContext';
 
 interface LiveDataCtx {
   devices: Device[];
