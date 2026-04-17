@@ -25,8 +25,8 @@ const App = () => (
         <Toaster />
         <Sonner position="bottom-right" richColors closeButton offset={24} />
         <AuthProvider>
-          <LiveDataProvider>
-            <BrowserRouter>
+          <BrowserRouter>
+            <LiveDataProvider>
               <Routes>
                 <Route path="/" element={<Navigate to="/public" replace />} />
                 <Route path="/public" element={<PublicDashboard />} />
@@ -38,8 +38,8 @@ const App = () => (
                 <Route path="/logs" element={<ProtectedRoute><Logs /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
-          </LiveDataProvider>
+            </LiveDataProvider>
+          </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>
     </ThemeProvider>
