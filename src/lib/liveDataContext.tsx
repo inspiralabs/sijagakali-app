@@ -27,6 +27,11 @@ const HISTORY_CAP = 200;
  * over ~2 minutes, triggering toasts/notifications continuously.
  */
 export function LiveDataProvider({ children }: { children: ReactNode }) {
+  const { isLoggedIn } = useAuth();
+  const location = useLocation();
+  const isAuthRoute = !location.pathname.startsWith('/login') && !location.pathname.startsWith('/public');
+  const notificationsEnabled = isLoggedIn && isAuthRoute;
+
   const [devices, setDevices] = useState<Device[]>(() =>
     mockDevices.map(d => ({ ...d, lastSeen: new Date().toISOString() }))
   );
@@ -39,6 +44,8 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
   const [lastUpdated, setLastUpdated] = useState<string>(new Date().toISOString());
 
   const tickRef = useRef(0);
+  const notifyRef = useRef(notificationsEnabled);
+  useEffect(() => { notifyRef.current = notificationsEnabled; }, [notificationsEnabled]);
 
   const tick = useCallback(() => {
     tickRef.current += 1;
