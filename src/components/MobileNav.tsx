@@ -1,11 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Server, Bell } from 'lucide-react';
+import { LayoutDashboard, Server, Bell, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/devices', label: 'Perangkat', icon: Server },
-  { to: '/alerts', label: 'Peringatan', icon: Bell },
+  { to: '/alerts', label: 'Alert', icon: Bell },
+  { to: '/logs', label: 'Logs', icon: FileText },
 ];
 
 export function MobileNav() {
