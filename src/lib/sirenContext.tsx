@@ -159,6 +159,17 @@ export function SirenProvider({ children }: { children: ReactNode }) {
     }
   }, [notifMuted]);
 
+  // Unlock AudioContext on first user gesture (browser autoplay policy).
+  useEffect(() => {
+    const unlock = () => {
+      const ctx = ensureCtx();
+      if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+    };
+    const events: (keyof WindowEventMap)[] = ['pointerdown', 'keydown', 'touchstart'];
+    events.forEach(e => window.addEventListener(e, unlock, { once: false, passive: true }));
+    return () => events.forEach(e => window.removeEventListener(e, unlock));
+  }, []);
+
   useEffect(() => () => stop(), [stop]);
 
   return (
