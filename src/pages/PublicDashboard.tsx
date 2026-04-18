@@ -3,16 +3,19 @@ import { WaterChart } from '@/components/WaterChart';
 import { AlertLog } from '@/components/AlertLog';
 import { SummaryCards } from '@/components/SummaryCards';
 import { DangerAlarm } from '@/components/DangerAlarm';
-import { Waves, LogIn, Sun, Moon } from 'lucide-react';
+import { Waves, LogIn, Sun, Moon, Volume2, VolumeX } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLiveData } from '@/lib/liveDataContext';
 import { useTheme } from '@/lib/themeContext';
+import { useSiren } from '@/lib/sirenContext';
 import { formatWIB } from '@/lib/mockData';
 
 export default function PublicDashboard() {
   const { devices, alerts, histories, lastUpdated } = useLiveData();
   const { theme, toggle } = useTheme();
+  const { enabled, muted, setMuted } = useSiren();
 
   return (
     <div className="min-h-screen bg-background">
@@ -38,6 +41,23 @@ export default function PublicDashboard() {
             <span className="text-xs text-muted-foreground hidden md:inline">
               Update: {formatWIB(lastUpdated)}
             </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setMuted(!muted)}
+                  disabled={!enabled}
+                  aria-label="Mute siren"
+                >
+                  {muted || !enabled ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {!enabled ? 'Sirine dinonaktifkan admin' : muted ? 'Sirine di-mute — klik untuk nyalakan' : 'Sirine aktif — klik untuk mute'}
+              </TooltipContent>
+            </Tooltip>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggle} aria-label="Toggle theme">
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
