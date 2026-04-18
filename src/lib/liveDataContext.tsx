@@ -30,8 +30,8 @@ const HISTORY_CAP = 200;
 export function LiveDataProvider({ children }: { children: ReactNode }) {
   const { isLoggedIn } = useAuth();
   const location = useLocation();
-  const isAuthRoute = !location.pathname.startsWith('/login') && !location.pathname.startsWith('/public');
-  const notificationsEnabled = isLoggedIn && isAuthRoute;
+  const isAuthRoute = !location.pathname.startsWith('/login');
+  const notificationsEnabled = (isLoggedIn || location.pathname.startsWith('/public')) && isAuthRoute;
   const { playFor: playSiren, playNotif, muted, setMuted, stop } = useSiren();
   const sirenRef = useRef(playSiren);
   const notifRef2 = useRef(playNotif);
@@ -108,17 +108,6 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
           fn(`${cfg.siagaLabel} — ${a.deviceName}`, {
             description: a.description,
             duration: a.status === 'bahaya' ? 8000 : 4000,
-            action: (a.status === 'bahaya' || a.status === 'siaga')
-              ? {
-                  label: mutedRef.current ? 'Unmute' : 'Mute',
-                  onClick: () => {
-                    const next = !mutedRef.current;
-                    setMutedRef.current(next);
-                    if (next) stopRef.current();
-                    toast.success(next ? 'Sirine di-mute' : 'Sirine diaktifkan');
-                  },
-                }
-              : undefined,
           });
           if (a.status === 'siaga' || a.status === 'bahaya') {
             sirenRef.current(a.status);
