@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Device, AlertEvent, WaterReading, StatusLevel, getStatusFromLevel, STATUS_CONFIG } from './types';
 import { mockDevices, mockAlerts, generateWaterHistory, buildAlert } from './mockData';
 import { useAuth } from './authContext';
+import { useSiren } from './sirenContext';
 
 interface LiveDataCtx {
   devices: Device[];
@@ -31,6 +32,9 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
   const isAuthRoute = !location.pathname.startsWith('/login') && !location.pathname.startsWith('/public');
   const notificationsEnabled = isLoggedIn && isAuthRoute;
+  const { playFor: playSiren } = useSiren();
+  const sirenRef = useRef(playSiren);
+  useEffect(() => { sirenRef.current = playSiren; }, [playSiren]);
 
   const [devices, setDevices] = useState<Device[]>(() =>
     mockDevices.map(d => ({ ...d, lastSeen: new Date().toISOString() }))
@@ -97,6 +101,9 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
             description: a.description,
             duration: a.status === 'bahaya' ? 8000 : 4000,
           });
+          if (a.status === 'siaga' || a.status === 'bahaya') {
+            sirenRef.current(a.status);
+          }
         });
       }
     }

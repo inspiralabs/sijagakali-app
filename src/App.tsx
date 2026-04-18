@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/authContext";
 import { ThemeProvider } from "@/lib/themeContext";
 import { LiveDataProvider } from "@/lib/liveDataContext";
+import { SirenProvider } from "@/lib/sirenContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import PublicDashboard from "./pages/PublicDashboard";
@@ -26,8 +27,9 @@ const App = () => (
         <Sonner position="bottom-right" richColors closeButton offset={24} />
         <AuthProvider>
           <BrowserRouter>
-            <LiveDataProvider>
-              <Routes>
+            <SirenProvider>
+              <LiveDataProvider>
+                <Routes>
                 <Route path="/" element={<Navigate to="/public" replace />} />
                 <Route path="/public" element={<PublicDashboard />} />
                 <Route path="/login" element={<Login />} />
@@ -36,9 +38,10 @@ const App = () => (
                 <Route path="/devices/:id/settings" element={<ProtectedRoute><DeviceSettings /></ProtectedRoute>} />
                 <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
                 <Route path="/logs" element={<ProtectedRoute><Logs /></ProtectedRoute>} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </LiveDataProvider>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </LiveDataProvider>
+            </SirenProvider>
           </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>
