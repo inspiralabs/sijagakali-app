@@ -32,9 +32,11 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
   const isAuthRoute = !location.pathname.startsWith('/login') && !location.pathname.startsWith('/public');
   const notificationsEnabled = isLoggedIn && isAuthRoute;
-  const { playFor: playSiren } = useSiren();
+  const { playFor: playSiren, playNotif } = useSiren();
   const sirenRef = useRef(playSiren);
+  const notifRef2 = useRef(playNotif);
   useEffect(() => { sirenRef.current = playSiren; }, [playSiren]);
+  useEffect(() => { notifRef2.current = playNotif; }, [playNotif]);
 
   const [devices, setDevices] = useState<Device[]>(() =>
     mockDevices.map(d => ({ ...d, lastSeen: new Date().toISOString() }))
@@ -103,6 +105,8 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
           });
           if (a.status === 'siaga' || a.status === 'bahaya') {
             sirenRef.current(a.status);
+          } else {
+            notifRef2.current(a.status === 'waspada' ? 'warn' : 'info');
           }
         });
       }
