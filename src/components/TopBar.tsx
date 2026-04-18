@@ -21,7 +21,7 @@ interface TopBarProps {
 
 export function TopBar({ lastUpdated, onLogout, showSidebarTrigger }: TopBarProps) {
   const { theme, toggle } = useTheme();
-  const { enabled, muted, notifMuted, duration, setEnabled, setMuted, setNotifMuted, setDuration, preview } = useSiren();
+  const { enabled, muted, notifMuted, duration, setEnabled, setMuted, setNotifMuted, setDuration } = useSiren();
   const { role } = useAuth();
   const isAdmin = role === 'admin';
 
