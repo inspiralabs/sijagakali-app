@@ -2,12 +2,13 @@ import { Waves, LogOut, User, Sun, Moon, Volume2, VolumeX, Siren, Bell, BellOff,
 import { formatWIB } from '@/lib/mockData';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuRadioGroup, DropdownMenuRadioItem,
+  DropdownMenuLabel, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Slider } from '@/components/ui/slider';
 import { useTheme } from '@/lib/themeContext';
-import { useSiren, SIREN_PATTERNS, SirenPattern } from '@/lib/sirenContext';
+import { useSiren, SIREN_DURATION_MAX, SIREN_DURATION_MIN } from '@/lib/sirenContext';
 import { useAuth } from '@/lib/authContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
@@ -20,7 +21,7 @@ interface TopBarProps {
 
 export function TopBar({ lastUpdated, onLogout, showSidebarTrigger }: TopBarProps) {
   const { theme, toggle } = useTheme();
-  const { enabled, muted, pattern, notifMuted, setEnabled, setMuted, setPattern, setNotifMuted, preview } = useSiren();
+  const { enabled, muted, notifMuted, duration, setEnabled, setMuted, setNotifMuted, setDuration, preview } = useSiren();
   const { role } = useAuth();
   const isAdmin = role === 'admin';
 
@@ -49,7 +50,7 @@ export function TopBar({ lastUpdated, onLogout, showSidebarTrigger }: TopBarProp
           Update: {formatWIB(lastUpdated)}
         </span>
 
-        {/* Admin: siren control + pattern picker */}
+        {/* Admin: siren control + duration */}
         {isAdmin && (
           <DropdownMenu>
             <Tooltip>
@@ -67,7 +68,7 @@ export function TopBar({ lastUpdated, onLogout, showSidebarTrigger }: TopBarProp
               </TooltipTrigger>
               <TooltipContent>Kontrol sirine (admin)</TooltipContent>
             </Tooltip>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuLabel>Sirine (Admin)</DropdownMenuLabel>
               <DropdownMenuItem
                 onClick={() => {
@@ -79,23 +80,24 @@ export function TopBar({ lastUpdated, onLogout, showSidebarTrigger }: TopBarProp
                 {enabled ? 'Nonaktifkan sirine' : 'Aktifkan sirine'}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Pola Sirine</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={pattern}
-                onValueChange={(v) => {
-                  setPattern(v as SirenPattern);
-                  toast.success(`Pola: ${SIREN_PATTERNS.find(p => p.value === v)?.label}`);
-                }}
-              >
-                {SIREN_PATTERNS.map(p => (
-                  <DropdownMenuRadioItem key={p.value} value={p.value}>
-                    <div className="flex flex-col">
-                      <span className="text-sm">{p.label}</span>
-                      <span className="text-xs text-muted-foreground">{p.description}</span>
-                    </div>
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
+              <div className="px-2 py-2">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Durasi pemutaran</span>
+                  <span className="text-xs font-semibold text-foreground">{duration}s</span>
+                </div>
+                <Slider
+                  value={[duration]}
+                  min={SIREN_DURATION_MIN}
+                  max={SIREN_DURATION_MAX}
+                  step={1}
+                  onValueChange={(v) => setDuration(v[0])}
+                  onValueCommit={(v) => toast.success(`Durasi sirine: ${v[0]}s`)}
+                />
+                <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+                  <span>{SIREN_DURATION_MIN}s</span>
+                  <span>{SIREN_DURATION_MAX}s</span>
+                </div>
+              </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => {
@@ -104,7 +106,7 @@ export function TopBar({ lastUpdated, onLogout, showSidebarTrigger }: TopBarProp
                   preview();
                 }}
               >
-                <Play className="mr-2 h-4 w-4" /> Preview pola
+                <Play className="mr-2 h-4 w-4" /> Preview sirine
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
