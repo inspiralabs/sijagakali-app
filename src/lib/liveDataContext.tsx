@@ -32,17 +32,11 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
   const isAuthRoute = !location.pathname.startsWith('/login');
   const notificationsEnabled = (isLoggedIn || location.pathname.startsWith('/public')) && isAuthRoute;
-  const { playFor: playSiren, playNotif, muted, setMuted, stop } = useSiren();
+  const { playFor: playSiren, playNotif } = useSiren();
   const sirenRef = useRef(playSiren);
   const notifRef2 = useRef(playNotif);
-  const mutedRef = useRef(muted);
-  const setMutedRef = useRef(setMuted);
-  const stopRef = useRef(stop);
   useEffect(() => { sirenRef.current = playSiren; }, [playSiren]);
   useEffect(() => { notifRef2.current = playNotif; }, [playNotif]);
-  useEffect(() => { mutedRef.current = muted; }, [muted]);
-  useEffect(() => { setMutedRef.current = setMuted; }, [setMuted]);
-  useEffect(() => { stopRef.current = stop; }, [stop]);
 
   const [devices, setDevices] = useState<Device[]>(() =>
     mockDevices.map(d => ({ ...d, lastSeen: new Date().toISOString() }))
