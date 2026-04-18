@@ -1,4 +1,4 @@
-import { Waves, LogOut, User, Sun, Moon, Volume2, VolumeX, Siren, Bell, BellOff, Play } from 'lucide-react';
+import { Waves, LogOut, User, Sun, Moon, Volume2, VolumeX, Siren, Bell, BellOff } from 'lucide-react';
 import { formatWIB } from '@/lib/mockData';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -98,16 +98,6 @@ export function TopBar({ lastUpdated, onLogout, showSidebarTrigger }: TopBarProp
                   <span>{SIREN_DURATION_MAX}s</span>
                 </div>
               </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => {
-                  if (!enabled) { toast.error('Sirine nonaktif'); return; }
-                  if (muted) { toast.error('Bunyi sirine di-mute'); return; }
-                  preview();
-                }}
-              >
-                <Play className="mr-2 h-4 w-4" /> Preview sirine
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
