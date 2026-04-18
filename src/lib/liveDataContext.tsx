@@ -105,6 +105,8 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
           });
           if (a.status === 'siaga' || a.status === 'bahaya') {
             sirenRef.current(a.status);
+          } else {
+            notifRef2.current(a.status === 'waspada' ? 'warn' : 'info');
           }
         });
       }
