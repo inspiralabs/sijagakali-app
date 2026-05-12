@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import PublicDashboard from "./pages/PublicDashboard";
 import Devices from "./pages/Devices";
 import DeviceSettings from "./pages/DeviceSettings";
+import DeviceNotifications from "./pages/DeviceNotifications";
 import Alerts from "./pages/Alerts";
 import Logs from "./pages/Logs";
 import AdminUsers from "./pages/AdminUsers";
@@ -46,6 +47,7 @@ const App = () => (
                   <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                   <Route path="/devices" element={<ProtectedRoute><Devices /></ProtectedRoute>} />
                   <Route path="/devices/:id/settings" element={<ProtectedRoute><DeviceSettings /></ProtectedRoute>} />
+                  <Route path="/devices/:id/notifications" element={<ProtectedRoute><DeviceNotifications /></ProtectedRoute>} />
                   <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
                   <Route path="/logs" element={<ProtectedRoute><Logs /></ProtectedRoute>} />
                   <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />

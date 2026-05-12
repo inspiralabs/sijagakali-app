@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Link } from 'react-router-dom';
-import { Plus, Pencil, Trash2, Settings2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Settings2, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppLayout } from '@/components/AppLayout';
 
@@ -169,6 +169,17 @@ export default function Devices() {
                   <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">{formatWIB(d.lastSeen)}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
+                      {fromSupabase && (
+                        <Button variant="outline" size="sm" className="h-8 gap-1 px-2" asChild>
+                          <Link
+                            to={`/devices/${encodeURIComponent(d.id)}/notifications`}
+                            title="Halaman Peringatan — WhatsApp, test, log"
+                          >
+                            <Bell className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline text-xs">Peringatan</span>
+                          </Link>
+                        </Button>
+                      )}
                       {/* Tombol pengaturan — selalu tampil */}
                       <Button variant="outline" size="sm" className="h-8 gap-1 px-2" asChild>
                         <Link to={`/devices/${encodeURIComponent(d.id)}/settings`} title="Pengaturan perangkat (threshold, interval, CCTV)">
