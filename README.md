@@ -107,6 +107,16 @@ npm run dev
 
 Build produksi: `npm run build`.
 
+### Jalankan build hasil produksi dengan PM2
+
+```bash
+cd sijagaair-app
+npm ci
+npm run build
+pm2 start ecosystem.config.cjs
+pm2 save
+```
+
 ---
 
 ## Repositori terkait
