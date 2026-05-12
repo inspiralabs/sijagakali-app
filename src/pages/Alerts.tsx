@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { formatWIB } from '@/lib/mockData';
+import { formatWIB } from '@/lib/utils';
 
 const PAGE_SIZE = 20;
 

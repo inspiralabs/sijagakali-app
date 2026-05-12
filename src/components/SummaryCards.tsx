@@ -9,7 +9,7 @@ interface SummaryCardsProps {
 export function SummaryCards({ devices }: SummaryCardsProps) {
   const total = devices.length;
   const bahayaCount = devices.filter(d => d.status === 'bahaya').length;
-  const avgLevel = Math.round(devices.reduce((s, d) => s + d.waterLevel, 0) / total);
+  const avgLevel = total ? Math.round(devices.reduce((s, d) => s + d.waterLevel, 0) / total) : 0;
   const onlineCount = devices.length; // mock: all online
 
   const cards = [
@@ -40,15 +40,15 @@ export function SummaryCards({ devices }: SummaryCardsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((c) => (
-        <Card key={c.label} className="flex items-center gap-3 border-border bg-card p-4">
-          <div className={`rounded-lg bg-secondary p-2.5 ${c.accent}`}>
+        <Card key={c.label} className="flex items-center gap-3 border-border bg-card p-3.5 sm:p-4">
+          <div className={`rounded-lg bg-secondary p-2 ${c.accent} sm:p-2.5`}>
             <c.icon className="h-5 w-5" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{c.label}</p>
-            <p className="text-xl font-bold text-foreground">{c.value}</p>
+            <p className="text-lg font-bold text-foreground sm:text-xl">{c.value}</p>
           </div>
         </Card>
       ))}

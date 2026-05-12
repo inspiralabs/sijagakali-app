@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { mockDevices } from '@/lib/mockData';
 import { Device, STATUS_CONFIG } from '@/lib/types';
+import { useLiveData } from '@/lib/liveDataContext';
+import { isSupabaseConfigured } from '@/lib/sijagaairEnv';
 import { StatusBadge } from '@/components/StatusBadge';
-import { formatWIB } from '@/lib/mockData';
+import { formatWIB } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,7 +19,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, Pencil, Trash2, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppLayout } from '@/components/AppLayout';
 
@@ -57,7 +60,10 @@ function deviceToForm(d: Device): DeviceFormState {
 }
 
 export default function Devices() {
-  const [devices, setDevices] = useState<Device[]>(mockDevices);
+  const { devices: supabaseDevices } = useLiveData();
+  const [localMockDevices, setLocalMockDevices] = useState<Device[]>(mockDevices);
+  const fromSupabase = isSupabaseConfigured();
+  const devices = fromSupabase ? supabaseDevices : localMockDevices;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<DeviceFormState>(EMPTY);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -69,13 +75,19 @@ export default function Devices() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (fromSupabase) {
+      toast.message('Data perangkat berasal dari Supabase', {
+        description: 'Ubah baris di tabel sijagaair.device_configs (dashboard SQL atau nanti lewat API admin).',
+      });
+      return;
+    }
     const threshold = {
       waspada: Number(form.waspada) || 0,
       siaga: Number(form.siaga) || 0,
       awas: Number(form.awas) || 0,
     };
     if (isEdit) {
-      setDevices(prev => prev.map(d =>
+      setLocalMockDevices(prev => prev.map(d =>
         d.id === form.id
           ? {
               ...d,
@@ -90,7 +102,7 @@ export default function Devices() {
       toast.success(`Perangkat "${form.name}" diperbarui`);
     } else {
       const id = `esp_${Date.now()}`;
-      setDevices(prev => [
+      setLocalMockDevices(prev => [
         ...prev,
         {
           id, name: form.name, location: form.location, mac: form.mac,
@@ -111,8 +123,9 @@ export default function Devices() {
 
   const handleDelete = () => {
     if (!confirmDeleteId) return;
+    if (fromSupabase) return;
     const d = devices.find(x => x.id === confirmDeleteId);
-    setDevices(prev => prev.filter(x => x.id !== confirmDeleteId));
+    setLocalMockDevices(prev => prev.filter(x => x.id !== confirmDeleteId));
     setConfirmDeleteId(null);
     if (d) toast.success(`Perangkat "${d.name}" dihapus`);
   };
@@ -121,10 +134,17 @@ export default function Devices() {
     <AppLayout>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-bold text-foreground">Manajemen Perangkat</h2>
-        <Button size="sm" className="gap-1" onClick={openCreate}>
-          <Plus className="h-4 w-4" /> Tambah Perangkat
-        </Button>
+        {!fromSupabase && (
+          <Button size="sm" className="gap-1" onClick={openCreate}>
+            <Plus className="h-4 w-4" /> Tambah Perangkat
+          </Button>
+        )}
       </div>
+      {fromSupabase && (
+        <p className="mb-3 text-xs text-muted-foreground">
+          Daftar perangkat diambil dari Supabase. Edit tambah/hapus melalui database atau API admin (roadmap).
+        </p>
+      )}
 
       <Card className="overflow-hidden border-border bg-card">
         <div className="overflow-x-auto">
@@ -148,13 +168,26 @@ export default function Devices() {
                   <td className="px-4 py-3"><StatusBadge status={d.status} /></td>
                   <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">{formatWIB(d.lastSeen)}</td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(d)} aria-label="Edit">
-                        <Pencil className="h-3.5 w-3.5" />
+                    <div className="flex items-center gap-1">
+                      {/* Tombol pengaturan — selalu tampil */}
+                      <Button variant="outline" size="sm" className="h-8 gap-1 px-2" asChild>
+                        <Link to={`/devices/${encodeURIComponent(d.id)}/settings`} title="Pengaturan perangkat (threshold, interval, CCTV)">
+                          <Settings2 className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline text-xs">Pengaturan</span>
+                        </Link>
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setConfirmDeleteId(d.id)} aria-label="Hapus">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+
+                      {/* Edit & hapus — hanya mode mock */}
+                      {!fromSupabase && (
+                        <>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(d)} aria-label="Edit">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setConfirmDeleteId(d.id)} aria-label="Hapus">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -8,6 +8,8 @@ export interface DeviceThreshold {
 
 export interface Device {
   id: string;
+  /** Slug wilayah di Postgres; diisi saat data dari Supabase. */
+  deploymentSlug?: string;
   name: string;
   location: string;
   mac: string;
@@ -22,7 +24,16 @@ export interface Device {
   reportInterval: number;
   status: StatusLevel;
   lastSeen: string;
+  /** IP kamera di LAN lapangan (referensi dokumentasi / node). */
+  cctvLocalIp?: string;
+  /** URL playback live (HLS/WebRTC/dummy); kolom `stream_playback_url`. */
   cctvUrl?: string;
+  /** Path gambar snapshot terakhir di Supabase Storage. */
+  cctvImagePath?: string | null;
+  /** Waktu capture snapshot terakhir. */
+  cctvCapturedAt?: string | null;
+  /** Signed URL terakhir yang di-resolve dari path; di-cache di client. */
+  cctvSignedUrl?: string | null;
 }
 
 export interface WaterReading {
@@ -53,3 +64,9 @@ export function getStatusFromLevel(level: number, threshold: DeviceThreshold): S
   if (level >= threshold.waspada) return 'waspada';
   return 'normal';
 }
+
+/** Payload form pengaturan CCTV di dashboard admin. */
+export type DeviceCctvFormPayload = {
+  cctvLocalIp: string;
+  streamPlaybackUrl: string;
+};

@@ -11,9 +11,8 @@ export function DeviceHealth({ devices }: DeviceHealthProps) {
   return (
     <div>
       <h3 className="mb-3 font-semibold text-foreground">Kesehatan Perangkat</h3>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {devices.map(d => {
-          const battColor = d.battery > 60 ? 'bg-status-normal' : d.battery > 30 ? 'bg-status-waspada' : 'bg-status-bahaya';
           return (
             <Card key={d.id} className="border-border bg-card p-3">
               <p className="mb-2 text-sm font-medium text-foreground">{d.name}</p>

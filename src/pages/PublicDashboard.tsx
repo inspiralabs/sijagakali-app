@@ -3,20 +3,26 @@ import { WaterChart } from '@/components/WaterChart';
 import { AlertLog } from '@/components/AlertLog';
 import { SummaryCards } from '@/components/SummaryCards';
 import { DangerAlarm } from '@/components/DangerAlarm';
+import { CctvPanel } from '@/components/CctvPanel';
 import { Waves, LogIn, Sun, Moon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useLiveData } from '@/lib/liveDataContext';
 import { useTheme } from '@/lib/themeContext';
-import { formatWIB } from '@/lib/mockData';
+import { formatWIB } from '@/lib/utils';
 
 export default function PublicDashboard() {
-  const { devices, alerts, histories, lastUpdated } = useLiveData();
+  const { devices, alerts, histories, lastUpdated, supabaseError } = useLiveData();
   const { theme, toggle } = useTheme();
 
   return (
     <div className="min-h-screen bg-background">
       <DangerAlarm devices={devices} />
+      {supabaseError && (
+        <div className="border-b border-destructive/40 bg-destructive/10 px-4 py-2 text-center text-xs text-destructive">
+          Koneksi data: {supabaseError}
+        </div>
+      )}
 
       <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm px-4 py-3 sm:px-6">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
@@ -57,6 +63,7 @@ export default function PublicDashboard() {
           {devices.map(d => <DeviceCard key={d.id} device={d} />)}
         </div>
         <WaterChart devices={devices} histories={histories} />
+        <CctvPanel devices={devices} showAdminLinks={false} />
         <AlertLog alerts={alerts.slice(0, 5)} />
       </main>
 

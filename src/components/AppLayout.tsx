@@ -6,6 +6,8 @@ import { MobileNav } from './MobileNav';
 import { DangerAlarm } from './DangerAlarm';
 import { useLiveData } from '@/lib/liveDataContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/lib/authContext';
+import { useNavigate } from 'react-router-dom';
 
 const SIDEBAR_LS_KEY = 'sja_sidebar_open';
 
@@ -19,6 +21,8 @@ function getInitialOpen(): boolean {
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { devices, lastUpdated } = useLiveData();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState<boolean>(getInitialOpen);
 
@@ -39,13 +43,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
     localStorage.setItem(SIDEBAR_LS_KEY, String(next));
   };
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/public');
+  };
+
   return (
     <SidebarProvider open={open} onOpenChange={handleOpenChange}>
       <DangerAlarm devices={devices} />
       <div className="flex min-h-screen w-full bg-background">
         {!isMobile && <AppSidebar />}
         <div className="flex flex-1 flex-col min-w-0">
-          <TopBar lastUpdated={lastUpdated} showSidebarTrigger={!isMobile} />
+          <TopBar lastUpdated={lastUpdated} onLogout={handleLogout} showSidebarTrigger={!isMobile} />
           <main className="flex-1 overflow-y-auto p-4 pb-24 lg:p-6 lg:pb-6">
             {children}
           </main>

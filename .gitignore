@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Secrets — jangan commit kredensial lokal
+.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

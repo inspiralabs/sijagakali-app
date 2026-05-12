@@ -1,6 +1,6 @@
 import { AlertEvent, STATUS_CONFIG } from '@/lib/types';
 import { Card } from '@/components/ui/card';
-import { formatWIB } from '@/lib/mockData';
+import { formatWIB } from '@/lib/utils';
 
 interface AlertLogProps {
   alerts: AlertEvent[];

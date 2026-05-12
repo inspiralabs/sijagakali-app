@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLiveData } from '@/lib/liveDataContext';
 import { STATUS_CONFIG, StatusLevel } from '@/lib/types';
-import { formatWIB } from '@/lib/mockData';
+import { formatWIB } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 type Row = {

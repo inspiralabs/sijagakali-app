@@ -1,4 +1,4 @@
-import { LayoutDashboard, Server, Bell, Waves, FileText, LogOut } from 'lucide-react';
+import { LayoutDashboard, Server, Bell, Waves, FileText, LogOut, Users } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Sidebar,
@@ -22,6 +22,7 @@ const items = [
   { title: 'Perangkat', url: '/devices', icon: Server },
   { title: 'Peringatan', url: '/alerts', icon: Bell },
   { title: 'Logs', url: '/logs', icon: FileText },
+  { title: 'Manajemen Admin', url: '/admin/users', icon: Users },
 ];
 
 export function AppSidebar() {
@@ -31,8 +32,8 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { logout } = useAuth();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/public');
   };
 

@@ -1,5 +1,5 @@
 import { Waves, LogOut, User, Sun, Moon } from 'lucide-react';
-import { formatWIB } from '@/lib/mockData';
+import { formatWIB } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
