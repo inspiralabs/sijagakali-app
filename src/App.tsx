@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/authContext";
 import { ThemeProvider } from "@/lib/themeContext";
 import { LiveDataProvider } from "@/lib/liveDataContext";
+import { SirenProvider } from "@/lib/sirenContext";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -34,22 +35,24 @@ const App = () => (
               v7_relativeSplatPath: true,
             }}
           >
-            <LiveDataProvider>
-              <Routes>
-                <Route path="/" element={<Navigate to="/public" replace />} />
-                <Route path="/public" element={<PublicDashboard />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/devices" element={<ProtectedRoute><Devices /></ProtectedRoute>} />
-                <Route path="/devices/:id/settings" element={<ProtectedRoute><DeviceSettings /></ProtectedRoute>} />
-                <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
-                <Route path="/logs" element={<ProtectedRoute><Logs /></ProtectedRoute>} />
-                <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </LiveDataProvider>
+            <SirenProvider>
+              <LiveDataProvider>
+                <Routes>
+                  <Route path="/" element={<Navigate to="/public" replace />} />
+                  <Route path="/public" element={<PublicDashboard />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/devices" element={<ProtectedRoute><Devices /></ProtectedRoute>} />
+                  <Route path="/devices/:id/settings" element={<ProtectedRoute><DeviceSettings /></ProtectedRoute>} />
+                  <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
+                  <Route path="/logs" element={<ProtectedRoute><Logs /></ProtectedRoute>} />
+                  <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </LiveDataProvider>
+            </SirenProvider>
           </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>

@@ -20,6 +20,7 @@ import {
 } from './types';
 import { mockDevices, mockAlerts, generateWaterHistory, buildAlert } from './mockData';
 import { useAuth } from './authContext';
+import { useSiren } from './sirenContext';
 import { isSupabaseConfigured, getDefaultDeploymentSlug } from './sijagaairEnv';
 import { getSupabase } from './supabase';
 import { fetchDashboardSnapshot, fetchAlertHistory } from './sijagaair/fetchDashboard';
@@ -59,8 +60,17 @@ const HISTORY_CAP = 200;
 function MockLiveDataProvider({ children }: { children: ReactNode }) {
   const { isLoggedIn } = useAuth();
   const location = useLocation();
-  const isAuthRoute = !location.pathname.startsWith('/login') && !location.pathname.startsWith('/public');
-  const notificationsEnabled = isLoggedIn && isAuthRoute;
+  const isAuthRoute = !location.pathname.startsWith('/login');
+  const notificationsEnabled = (isLoggedIn || location.pathname.startsWith('/public')) && isAuthRoute;
+  const { playFor: playSiren, playNotif } = useSiren();
+  const sirenRef = useRef(playSiren);
+  const notifRef2 = useRef(playNotif);
+  useEffect(() => {
+    sirenRef.current = playSiren;
+  }, [playSiren]);
+  useEffect(() => {
+    notifRef2.current = playNotif;
+  }, [playNotif]);
 
   const [devices, setDevices] = useState<Device[]>(() =>
     mockDevices.map((d) => ({ ...d, lastSeen: new Date().toISOString() }))
@@ -127,6 +137,11 @@ function MockLiveDataProvider({ children }: { children: ReactNode }) {
             description: a.description,
             duration: a.status === 'bahaya' ? 8000 : 4000,
           });
+          if (a.status === 'siaga' || a.status === 'bahaya') {
+            sirenRef.current(a.status);
+          } else {
+            notifRef2.current(a.status === 'waspada' ? 'warn' : 'info');
+          }
         });
       }
     }
@@ -190,12 +205,22 @@ function isStatusLevel(s: unknown): s is StatusLevel {
 function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
   const { isLoggedIn } = useAuth();
   const location = useLocation();
-  const isAuthRoute = !location.pathname.startsWith('/login') && !location.pathname.startsWith('/public');
-  const notificationsEnabled = isLoggedIn && isAuthRoute;
+  const isAuthRoute = !location.pathname.startsWith('/login');
+  const notificationsEnabled = (isLoggedIn || location.pathname.startsWith('/public')) && isAuthRoute;
   const notifyRef = useRef(notificationsEnabled);
   useEffect(() => {
     notifyRef.current = notificationsEnabled;
   }, [notificationsEnabled]);
+
+  const { playFor: playSiren, playNotif } = useSiren();
+  const sirenRef = useRef(playSiren);
+  const notifRef2 = useRef(playNotif);
+  useEffect(() => {
+    sirenRef.current = playSiren;
+  }, [playSiren]);
+  useEffect(() => {
+    notifRef2.current = playNotif;
+  }, [playNotif]);
 
   const deploymentSlug = getDefaultDeploymentSlug();
   const slugRef = useRef(deploymentSlug);
@@ -315,6 +340,11 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
                     description: ev.description,
                     duration: ev.status === 'bahaya' ? 8000 : 4000,
                   });
+                  if (ev.status === 'siaga' || ev.status === 'bahaya') {
+                    sirenRef.current(ev.status);
+                  } else {
+                    notifRef2.current(ev.status === 'waspada' ? 'warn' : 'info');
+                  }
                 });
               });
             }
