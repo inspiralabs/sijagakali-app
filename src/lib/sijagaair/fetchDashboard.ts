@@ -156,6 +156,36 @@ export async function fetchDashboardSnapshot(
  * Ambil riwayat notifikasi dari `notification_logs` untuk ditampilkan
  * di halaman Alerts dan AlertLog sebagai AlertEvent[].
  */
+export type DeviceNotificationLogRow = {
+  id: string;
+  device_id: string;
+  deployment_slug: string | null;
+  water_status: string | null;
+  channel: string;
+  status: string;
+  error_message: string | null;
+  sent_at: string;
+};
+
+/** Log kiriman channel (termasuk gagal) untuk satu perangkat — Halaman Peringatan. */
+export async function fetchDeviceNotificationLogs(
+  supabase: SupabaseClient,
+  deploymentSlug: string,
+  deviceId: string,
+  limit = 80
+): Promise<DeviceNotificationLogRow[]> {
+  const { data, error } = await supabase
+    .from('notification_logs')
+    .select('id, device_id, deployment_slug, water_status, channel, status, error_message, sent_at')
+    .eq('deployment_slug', deploymentSlug)
+    .eq('device_id', deviceId)
+    .order('sent_at', { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+  return data as DeviceNotificationLogRow[];
+}
+
 export async function fetchAlertHistory(
   supabase: SupabaseClient,
   deploymentSlug: string,

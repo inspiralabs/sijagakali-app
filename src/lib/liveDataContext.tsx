@@ -203,7 +203,9 @@ function isStatusLevel(s: unknown): s is StatusLevel {
 }
 
 function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, loading: authLoading, user } = useAuth();
+  /** Kunci sesi untuk refetch: setelah getSession selesai, dan lagi saat login/logout (bukan tiap refresh token). */
+  const authSessionKey = user?.id ?? 'anon';
   const location = useLocation();
   const isAuthRoute = !location.pathname.startsWith('/login');
   const notificationsEnabled = (isLoggedIn || location.pathname.startsWith('/public')) && isAuthRoute;
@@ -231,9 +233,14 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
   const [histories, setHistories] = useState<Record<string, WaterReading[]>>({});
   const [lastUpdated, setLastUpdated] = useState<string>(new Date().toISOString());
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
-
-  // Fetch awal data
+  const devicesRef = useRef<Device[]>([]);
   useEffect(() => {
+    devicesRef.current = devices;
+  }, [devices]);
+
+  // Fetch awal data — tunggu auth selesai memuat sesi agar JWT terpasang (hindari race anon lalu tidak refetch).
+  useEffect(() => {
+    if (authLoading) return;
     let cancelled = false;
     const supabase = getSupabase();
     if (!supabase) return;
@@ -260,10 +267,11 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [deploymentSlug]);
+  }, [deploymentSlug, authLoading, authSessionKey]);
 
-  // Supabase Realtime — INSERT sensor_readings
+  // Supabase Realtime — INSERT sensor_readings (setelah sesi siap, supaya hak akses konsisten dengan fetch)
   useEffect(() => {
+    if (authLoading) return;
     const supabase = getSupabase();
     if (!supabase) return;
 
@@ -286,6 +294,29 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
           const rawStatus = row.water_status;
           const cctvImagePath = (row.cctv_image_path as string | null) ?? null;
           const cctvCapturedAt = (row.cctv_captured_at as string | null) ?? null;
+
+          const prevList = devicesRef.current;
+          if (prevList.length === 0 || !prevList.some((d) => d.id === deviceId)) {
+            queueMicrotask(async () => {
+              const supa = getSupabase();
+              if (!supa) return;
+              try {
+                const [{ devices: d, histories: h }, alertHistory] = await Promise.all([
+                  fetchDashboardSnapshot(supa, slugRef.current),
+                  fetchAlertHistory(supa, slugRef.current),
+                ]);
+                setDevices(d);
+                setHistories(h);
+                setAlerts(alertHistory);
+                setLastUpdated(new Date().toISOString());
+                setSupabaseError(null);
+              } catch (e: unknown) {
+                const msg = e instanceof Error ? e.message : String(e);
+                setSupabaseError(msg);
+              }
+            });
+            return;
+          }
 
           setDevices((prev) => {
             const newAlerts: AlertEvent[] = [];
@@ -368,7 +399,7 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [deploymentSlug]);
+  }, [deploymentSlug, authSessionKey, authLoading]);
 
   // Resolve signed URL untuk device tertentu
   const refreshCctvSignedUrl = useCallback(async (deviceId: string) => {
