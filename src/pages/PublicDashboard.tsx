@@ -59,7 +59,7 @@ export default function PublicDashboard() {
             </div>
             <div>
               <h1 className="text-lg font-bold tracking-tight text-foreground">SiJagaAir</h1>
-              <p className="text-[10px] text-muted-foreground">Monitoring Ketinggian Air — Publik</p>
+              <p className="text-[13px] text-muted-foreground">Early Warning System</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -196,7 +196,7 @@ export default function PublicDashboard() {
       </main>
 
       <footer className="border-t border-border bg-card/80 px-4 py-4 text-center text-xs text-muted-foreground backdrop-blur-sm">
-        SiJagaAir — Sistem Informasi Jaga Air · Early Warning System · Desa Bojong Kulur
+        © {new Date().getFullYear()} Nawa Inspira Digital · Desa Bojong Kulur
       </footer>
     </div>
   );
