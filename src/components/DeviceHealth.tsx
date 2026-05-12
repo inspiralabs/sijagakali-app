@@ -5,13 +5,17 @@ import { Battery, Signal, Thermometer } from 'lucide-react';
 
 interface DeviceHealthProps {
   devices: Device[];
+  /** `stack`: satu kolom (kolom samping dashboard); `grid`: dua kolom di layar lebar. */
+  layout?: 'grid' | 'stack';
 }
 
-export function DeviceHealth({ devices }: DeviceHealthProps) {
+export function DeviceHealth({ devices, layout = 'grid' }: DeviceHealthProps) {
+  const gridClass = layout === 'stack' ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-1 gap-3 sm:grid-cols-2';
+
   return (
-    <div>
-      <h3 className="mb-3 font-semibold text-foreground">Kesehatan Perangkat</h3>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className="rounded-xl border border-border/80 bg-card/50 p-4 shadow-sm sm:p-5">
+      <h3 className="mb-4 text-sm font-semibold text-foreground">Kesehatan perangkat</h3>
+      <div className={gridClass}>
         {devices.map(d => {
           return (
             <Card key={d.id} className="border-border bg-card p-3">

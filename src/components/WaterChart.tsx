@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer, Legend } from 'recharts';
 import { Device, STATUS_CONFIG, WaterReading } from '@/lib/types';
+import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -9,9 +10,10 @@ const DEVICE_COLORS = ['hsl(217 91% 60%)', 'hsl(262 83% 65%)', 'hsl(38 92% 50%)'
 interface WaterChartProps {
   devices: Device[];
   histories?: Record<string, WaterReading[]>;
+  className?: string;
 }
 
-export function WaterChart({ devices, histories }: WaterChartProps) {
+export function WaterChart({ devices, histories, className }: WaterChartProps) {
   const [selectedDevice, setSelectedDevice] = useState<string>('all');
 
   const chartData = useMemo(() => {
@@ -38,11 +40,18 @@ export function WaterChart({ devices, histories }: WaterChartProps) {
   const refDevice = selectedDevice === 'all' ? devices[0] : devices.find(d => d.id === selectedDevice) || devices[0];
 
   return (
-    <Card className="border-border bg-card p-4">
-      <div className="mb-4 flex items-center justify-between">
+    <Card
+      className={cn(
+        'flex min-h-0 min-w-0 flex-col overflow-hidden border-border/90 bg-card shadow-sm',
+        className
+      )}
+    >
+      <div className="mb-4 flex shrink-0 flex-col gap-3 border-b border-border/60 px-4 pb-4 pt-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <h3 className="font-semibold text-foreground">Tren Level Air — Live</h3>
         <Select value={selectedDevice} onValueChange={setSelectedDevice}>
-          <SelectTrigger className="w-44 h-8 text-xs"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-9 w-full text-xs sm:w-48">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua Perangkat</SelectItem>
             {devices.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
@@ -50,8 +59,9 @@ export function WaterChart({ devices, histories }: WaterChartProps) {
         </Select>
       </div>
 
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={chartData}>
+      <div className="min-h-[min(18rem,50vw)] w-full min-w-0 flex-1 px-2 pb-4 sm:min-h-72 sm:px-4 lg:min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="time" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} interval="preserveStartEnd" minTickGap={30} />
           <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} unit=" cm" />
@@ -80,8 +90,9 @@ export function WaterChart({ devices, histories }: WaterChartProps) {
               connectNulls
             />
           ))}
-        </LineChart>
-      </ResponsiveContainer>
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </Card>
   );
 }

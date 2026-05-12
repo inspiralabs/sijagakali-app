@@ -40,7 +40,7 @@ export function SummaryCards({ devices }: SummaryCardsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((c) => (
         <Card key={c.label} className="flex items-center gap-3 border-border bg-card p-3.5 sm:p-4">
           <div className={`rounded-lg bg-secondary p-2 ${c.accent} sm:p-2.5`}>

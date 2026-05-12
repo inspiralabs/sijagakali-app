@@ -1,16 +1,24 @@
 import { AlertEvent, STATUS_CONFIG } from '@/lib/types';
 import { Card } from '@/components/ui/card';
-import { formatWIB } from '@/lib/utils';
+import { cn, formatWIB } from '@/lib/utils';
 
 interface AlertLogProps {
   alerts: AlertEvent[];
+  className?: string;
 }
 
-export function AlertLog({ alerts }: AlertLogProps) {
+export function AlertLog({ alerts, className }: AlertLogProps) {
   return (
-    <Card className="border-border bg-card p-4">
-      <h3 className="mb-3 font-semibold text-foreground">Log Peringatan Terbaru</h3>
-      <div className="space-y-3">
+    <Card
+      className={cn(
+        'flex min-h-0 min-w-0 flex-col border-border/90 bg-card shadow-sm',
+        className
+      )}
+    >
+      <div className="shrink-0 border-b border-border/60 px-4 py-3 sm:px-5">
+        <h3 className="text-sm font-semibold text-foreground">Log peringatan terbaru</h3>
+      </div>
+      <div className="max-h-[min(24rem,50vh)] min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5 lg:max-h-none">
         {alerts.map(alert => {
           const config = STATUS_CONFIG[alert.status];
           return (

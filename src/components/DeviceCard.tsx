@@ -6,10 +6,15 @@ import { StatusBadge } from './StatusBadge';
 import { Card } from '@/components/ui/card';
 import { Battery, Signal, Thermometer, Camera, Video, VideoOff, Settings } from 'lucide-react';
 import { getSignedUrl } from '@/lib/sijagaair/signedUrlCache';
-import { formatWIB } from '@/lib/utils';
+import { formatWIB, cn } from '@/lib/utils';
 
 interface DeviceCardProps {
   device: Device;
+  /** Dashboard publik: kartu setinggi, tanpa pintasan admin ke pengaturan perangkat. */
+  publicView?: boolean;
+  /** Jika false, blok snapshot/live CCTV disembunyikan (mis. admin punya section Pantau CCTV terpisah). */
+  embedCctv?: boolean;
+  className?: string;
 }
 
 function CctvSnapshot({ device }: { device: Device }) {
@@ -71,7 +76,7 @@ function CctvSnapshot({ device }: { device: Device }) {
   );
 }
 
-function CctvLiveStream({ device }: { device: Device }) {
+function CctvLiveStream({ device, publicView }: { device: Device; publicView?: boolean }) {
   const url = device.cctvUrl;
 
   if (!url) {
@@ -80,12 +85,18 @@ function CctvLiveStream({ device }: { device: Device }) {
         <div className="text-center text-muted-foreground">
           <VideoOff className="mx-auto mb-1 h-8 w-8 opacity-40" />
           <p className="text-xs">Live stream belum dikonfigurasi</p>
-          <Link
-            to={`/admin/devices/${device.id}`}
-            className="mt-1 inline-block text-[10px] text-primary underline"
-          >
-            Atur di Pengaturan Perangkat
-          </Link>
+          {publicView ? (
+            <Link to="/login" className="mt-1 inline-block text-[10px] text-primary underline">
+              Masuk admin untuk mengatur perangkat
+            </Link>
+          ) : (
+            <Link
+              to={`/devices/${device.id}/settings`}
+              className="mt-1 inline-block text-[10px] text-primary underline"
+            >
+              Atur di Pengaturan Perangkat
+            </Link>
+          )}
         </div>
       </div>
     );
@@ -124,7 +135,7 @@ function CctvLiveStream({ device }: { device: Device }) {
   );
 }
 
-export function DeviceCard({ device }: DeviceCardProps) {
+export function DeviceCard({ device, publicView = false, embedCctv = true, className }: DeviceCardProps) {
   const config = STATUS_CONFIG[device.status];
   const levelPct = Math.min((device.waterLevel / device.maxCapacity) * 100, 100);
   const waveHeight = Math.max(10, levelPct * 0.6);
@@ -134,20 +145,24 @@ export function DeviceCard({ device }: DeviceCardProps) {
 
   return (
     <Card
-      className="relative overflow-hidden border-l-4 bg-card"
+      className={cn(
+        'relative overflow-hidden border-l-4 bg-card',
+        publicView && 'flex h-full min-h-0 flex-col shadow-sm',
+        className
+      )}
       style={{ borderLeftColor: config.hex }}
     >
       {/* Header */}
-      <div className="flex items-start justify-between p-4 pb-2">
+      <div className="flex shrink-0 items-start justify-between p-4 pb-2">
         <div>
           <h3 className="font-semibold text-foreground">{device.name}</h3>
           <p className="text-xs text-muted-foreground">{device.location}</p>
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge status={device.status} />
-          {device.deploymentSlug && (
+          {!publicView && device.deploymentSlug && (
             <Link
-              to={`/admin/devices/${device.id}`}
+              to={`/devices/${encodeURIComponent(device.id)}/settings`}
               className="text-muted-foreground hover:text-foreground"
               title="Pengaturan perangkat"
             >
@@ -158,7 +173,7 @@ export function DeviceCard({ device }: DeviceCardProps) {
       </div>
 
       {/* Wave visualization */}
-      <div className="relative mx-4 h-32 overflow-hidden rounded-lg bg-secondary">
+      <div className="relative mx-4 h-32 shrink-0 overflow-hidden rounded-lg bg-secondary">
         <div className="absolute inset-0 flex items-center justify-center z-10">
           <div className="text-center">
             <span className="text-3xl font-extrabold text-foreground drop-shadow-lg">
@@ -183,14 +198,26 @@ export function DeviceCard({ device }: DeviceCardProps) {
       </div>
 
       {/* Thresholds */}
-      <div className="flex items-center justify-between px-4 py-2 text-[10px] text-muted-foreground">
-        <span>Waspada: <b className="text-status-waspada">{device.threshold.waspada} cm</b></span>
-        <span>Siaga: <b className="text-status-siaga">{device.threshold.siaga} cm</b></span>
-        <span>Awas: <b className="text-status-bahaya">{device.threshold.awas} cm</b></span>
+      <div className="grid shrink-0 grid-cols-3 gap-2 border-t border-border/80 px-3 py-2.5 text-center text-[10px] text-muted-foreground sm:px-4">
+        <span className="min-w-0">
+          Waspada
+          <br />
+          <b className="text-status-waspada">{device.threshold.waspada} cm</b>
+        </span>
+        <span className="min-w-0 border-x border-border/60 px-1">
+          Siaga
+          <br />
+          <b className="text-status-siaga">{device.threshold.siaga} cm</b>
+        </span>
+        <span className="min-w-0">
+          Awas
+          <br />
+          <b className="text-status-bahaya">{device.threshold.awas} cm</b>
+        </span>
       </div>
 
       {/* Mini stats */}
-      <div className="flex items-center gap-4 border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
+      <div className="flex shrink-0 items-center gap-4 border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
           <Battery className="h-3.5 w-3.5" />
           {device.battery}%
@@ -205,43 +232,49 @@ export function DeviceCard({ device }: DeviceCardProps) {
         </span>
       </div>
 
-      {/* CCTV section */}
-      <div className="border-t border-border px-4 pb-4 pt-3">
-        {/* Tab bar */}
-        <div className="mb-2 flex items-center gap-1">
-          <button
-            onClick={() => setCctvTab('snapshot')}
-            className={`flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium transition-colors ${
-              cctvTab === 'snapshot'
-                ? 'bg-primary/10 text-primary'
-                : 'text-muted-foreground hover:bg-secondary'
-            }`}
-          >
-            <Camera className="h-3 w-3" />
-            Snapshot
-          </button>
-          <button
-            onClick={() => setCctvTab('live')}
-            className={`flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium transition-colors ${
-              cctvTab === 'live'
-                ? 'bg-primary/10 text-primary'
-                : 'text-muted-foreground hover:bg-secondary'
-            }`}
-          >
-            <Video className="h-3 w-3" />
-            Live Stream
-          </button>
-          <span className="ml-auto text-[9px] font-medium text-muted-foreground tracking-wide uppercase">
-            CCTV
-          </span>
-        </div>
+      {embedCctv && (
+        <div
+          className={cn(
+            'border-t border-border px-4 pb-4 pt-3',
+            publicView && 'mt-auto flex min-h-0 flex-1 flex-col'
+          )}
+        >
+          {/* Tab bar */}
+          <div className="mb-2 flex items-center gap-1">
+            <button
+              onClick={() => setCctvTab('snapshot')}
+              className={`flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium transition-colors ${
+                cctvTab === 'snapshot'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:bg-secondary'
+              }`}
+            >
+              <Camera className="h-3 w-3" />
+              Snapshot
+            </button>
+            <button
+              onClick={() => setCctvTab('live')}
+              className={`flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium transition-colors ${
+                cctvTab === 'live'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:bg-secondary'
+              }`}
+            >
+              <Video className="h-3 w-3" />
+              Live Stream
+            </button>
+            <span className="ml-auto text-[9px] font-medium text-muted-foreground tracking-wide uppercase">
+              CCTV
+            </span>
+          </div>
 
-        {cctvTab === 'snapshot' ? (
-          <CctvSnapshot device={device} />
-        ) : (
-          <CctvLiveStream device={device} />
-        )}
-      </div>
+          {cctvTab === 'snapshot' ? (
+            <CctvSnapshot device={device} />
+          ) : (
+            <CctvLiveStream device={device} publicView={publicView} />
+          )}
+        </div>
+      )}
     </Card>
   );
 }

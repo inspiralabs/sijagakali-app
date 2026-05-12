@@ -2,31 +2,58 @@
  * CctvPanel — menampilkan grid CCTV (snapshot + live) untuk semua titik pantau.
  * Dipakai di PublicDashboard dan Dashboard admin.
  */
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Camera, VideoOff, Video, Settings, RefreshCw } from 'lucide-react';
+import { Camera, VideoOff, Video, Settings, RefreshCw, Maximize2, Minimize2 } from 'lucide-react';
 import { Device } from '@/lib/types';
 import { StatusBadge } from './StatusBadge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { getSignedUrl } from '@/lib/sijagaair/signedUrlCache';
-import { formatWIB } from '@/lib/utils';
+import { formatWIB, cn } from '@/lib/utils';
 
 interface CctvTileProps {
   device: Device;
   showAdminLink?: boolean;
+  emphasis?: boolean;
 }
 
-function CctvTile({ device, showAdminLink }: CctvTileProps) {
+function CctvTile({ device, showAdminLink, emphasis }: CctvTileProps) {
   const [tab, setTab] = useState<'snapshot' | 'live'>('snapshot');
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerTab, setViewerTab] = useState<'snapshot' | 'live'>('snapshot');
   const [imgSrc, setImgSrc] = useState<string | null>(null);
   const [imgLoading, setImgLoading] = useState(false);
   const prevPath = useRef<string | null | undefined>(null);
+  const fullscreenTargetRef = useRef<HTMLDivElement | null>(null);
+  const [fsActive, setFsActive] = useState(false);
+
+  useEffect(() => {
+    const onFs = () => setFsActive(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFs);
+    return () => document.removeEventListener('fullscreenchange', onFs);
+  }, []);
+
+  useEffect(() => {
+    if (!viewerOpen && document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => {});
+    }
+  }, [viewerOpen]);
 
   useEffect(() => {
     if (device.cctvImagePath === prevPath.current) return;
     prevPath.current = device.cctvImagePath;
-    if (!device.cctvImagePath) { setImgSrc(null); return; }
+    if (!device.cctvImagePath) {
+      setImgSrc(null);
+      return;
+    }
     setImgLoading(true);
     getSignedUrl(device.cctvImagePath).then((url) => {
       setImgSrc(url);
@@ -48,146 +75,334 @@ function CctvTile({ device, showAdminLink }: CctvTileProps) {
     });
   };
 
-  const hasStream = !!device.cctvUrl;
+  const hasStream = !!(device.cctvUrl && String(device.cctvUrl).trim());
   const isIframe = hasStream && !/\.mp4|\.m3u8/i.test(device.cctvUrl!);
 
-  return (
-    <Card className="overflow-hidden border-border bg-card">
-      {/* Tile header */}
-      <div className="flex items-center justify-between border-b border-border px-3 py-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <StatusBadge status={device.status} />
-          <span className="truncate text-xs font-semibold text-foreground">{device.name}</span>
-        </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {showAdminLink && (
-            <Link
-              to={`/admin/devices/${device.id}`}
-              className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
-              title="Pengaturan CCTV"
-            >
-              <Settings className="h-3.5 w-3.5" />
-            </Link>
-          )}
-          {tab === 'snapshot' && device.cctvImagePath && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={handleRefresh}
-              title="Refresh gambar"
-            >
-              <RefreshCw className={`h-3 w-3 ${imgLoading ? 'animate-spin' : ''}`} />
-            </Button>
-          )}
-        </div>
-      </div>
+  const canExpandSnapshot = !!device.cctvImagePath;
+  const canExpandLive = hasStream;
+  /** Perbesar aktif jika salah satu mode punya konten (default tab Snapshot tidak boleh memblokir Live-only). */
+  const canExpand = canExpandSnapshot || canExpandLive;
 
-      {/* Tab switcher */}
-      <div className="flex gap-1 border-b border-border px-2 py-1">
-        <button
-          onClick={() => setTab('snapshot')}
-          className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
-            tab === 'snapshot' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary'
-          }`}
-        >
-          <Camera className="h-3 w-3" />
-          Snapshot
-        </button>
-        <button
-          onClick={() => setTab('live')}
-          className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
-            tab === 'live' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary'
-          }`}
-        >
-          <Video className="h-3 w-3" />
-          Live
-          {hasStream && (
-            <span className="ml-0.5 rounded bg-red-500 px-0.5 text-[8px] text-white font-bold">
-              ON
-            </span>
-          )}
-        </button>
-      </div>
+  const openViewer = useCallback(() => {
+    if (tab === 'snapshot' && canExpandSnapshot) setViewerTab('snapshot');
+    else if (tab === 'live' && canExpandLive) setViewerTab('live');
+    else if (canExpandLive) setViewerTab('live');
+    else setViewerTab('snapshot');
+    setViewerOpen(true);
+  }, [tab, canExpandSnapshot, canExpandLive]);
 
-      {/* Content */}
-      <div className="relative aspect-video w-full bg-black">
-        {tab === 'snapshot' ? (
-          <>
-            {imgLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-secondary animate-pulse">
-                <Camera className="h-8 w-8 text-muted-foreground opacity-40" />
-              </div>
+  const toggleBrowserFullscreen = useCallback(async () => {
+    const el = fullscreenTargetRef.current;
+    if (!el) return;
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await el.requestFullscreen();
+      }
+    } catch {
+      /* izin ditolak / iframe membatasi */
+    }
+  }, []);
+
+  const renderSnapshotBody = (forDialog: boolean) => (
+    <>
+      {imgLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-secondary animate-pulse">
+          <Camera className="h-10 w-10 text-muted-foreground opacity-40" />
+        </div>
+      )}
+      {imgSrc && !imgLoading ? (
+        forDialog ? (
+          <div className="absolute inset-0 flex items-center justify-center p-3">
+            <img
+              src={imgSrc}
+              alt={`Snapshot ${device.name}`}
+              className="max-h-full max-w-full object-contain"
+              onError={() => setImgSrc(null)}
+            />
+            {device.cctvCapturedAt && (
+              <span className="absolute bottom-3 right-3 rounded bg-black/75 px-2 py-1 text-[10px] text-white/95 font-mono">
+                {formatWIB(device.cctvCapturedAt)}
+              </span>
             )}
-            {imgSrc && !imgLoading ? (
-              <>
-                <img
-                  src={imgSrc}
-                  alt={`Snapshot ${device.name}`}
-                  className="h-full w-full object-cover"
-                  onError={() => setImgSrc(null)}
-                />
-                {device.cctvCapturedAt && (
-                  <span className="absolute bottom-1.5 right-2 rounded bg-black/70 px-1.5 py-0.5 text-[9px] text-white/90 font-mono">
-                    {formatWIB(device.cctvCapturedAt)}
-                  </span>
-                )}
-              </>
-            ) : !imgLoading ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
-                <Camera className="mb-1 h-10 w-10 opacity-30" />
-                <p className="text-xs">Belum ada gambar</p>
-              </div>
-            ) : null}
-          </>
+          </div>
         ) : (
           <>
-            {!hasStream ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
-                <VideoOff className="mb-1 h-10 w-10 opacity-30" />
-                <p className="text-xs">Stream belum dikonfigurasi</p>
-                {showAdminLink && (
-                  <Link
-                    to={`/admin/devices/${device.id}`}
-                    className="mt-1 text-[10px] text-primary underline"
-                  >
-                    Konfigurasi di sini
-                  </Link>
-                )}
-              </div>
-            ) : isIframe ? (
-              <iframe
-                src={device.cctvUrl}
-                title={`Live CCTV ${device.name}`}
-                className="h-full w-full border-0"
-                allow="autoplay; fullscreen"
-              />
-            ) : (
-              <video
-                src={device.cctvUrl}
-                className="h-full w-full object-cover"
-                autoPlay
-                muted
-                playsInline
-                controls
-              />
-            )}
-            {hasStream && (
-              <span className="absolute top-1.5 right-2 inline-flex items-center gap-1 rounded bg-red-600/90 px-1.5 py-0.5 text-[9px] font-bold text-white animate-pulse">
-                <span className="h-1.5 w-1.5 rounded-full bg-white inline-block" />
-                LIVE
+            <img
+              src={imgSrc}
+              alt={`Snapshot ${device.name}`}
+              className="h-full w-full object-cover"
+              onError={() => setImgSrc(null)}
+            />
+            {device.cctvCapturedAt && (
+              <span className="absolute bottom-3 right-3 rounded bg-black/75 px-2 py-1 text-[10px] text-white/95 font-mono">
+                {formatWIB(device.cctvCapturedAt)}
               </span>
             )}
           </>
-        )}
-      </div>
+        )
+      ) : !imgLoading ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+          <Camera className="mb-2 h-12 w-12 opacity-30" />
+          <p className="text-sm">Belum ada gambar</p>
+        </div>
+      ) : null}
+    </>
+  );
 
-      {/* Footer — level air */}
-      <div className="flex items-center justify-between border-t border-border px-3 py-1.5 text-[10px] text-muted-foreground">
-        <span>Level air saat ini:</span>
-        <span className="font-bold text-foreground">{device.waterLevel} cm</span>
-      </div>
-    </Card>
+  const renderLiveBody = (forDialog: boolean) => (
+    <>
+      {!hasStream ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+          <VideoOff className="mb-2 h-12 w-12 opacity-30" />
+          <p className="text-sm">Stream belum dikonfigurasi</p>
+          {showAdminLink && (
+            <Link
+              to={`/devices/${encodeURIComponent(device.id)}/settings`}
+              className="mt-2 text-xs text-primary underline"
+            >
+              Konfigurasi di sini
+            </Link>
+          )}
+        </div>
+      ) : isIframe ? (
+        <iframe
+          src={device.cctvUrl}
+          title={`Live CCTV ${device.name}`}
+          className={forDialog ? 'absolute inset-0 h-full w-full border-0' : 'h-full w-full border-0'}
+          allow="autoplay; fullscreen"
+          allowFullScreen
+        />
+      ) : (
+        forDialog ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
+            <video
+              src={device.cctvUrl}
+              className="max-h-full max-w-full object-contain"
+              autoPlay
+              muted
+              playsInline
+              controls
+            />
+          </div>
+        ) : (
+          <video
+            src={device.cctvUrl}
+            className="h-full w-full object-cover"
+            autoPlay
+            muted
+            playsInline
+            controls
+          />
+        )
+      )}
+      {hasStream && (
+        <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded bg-red-600/90 px-2 py-0.5 text-[10px] font-bold text-white animate-pulse">
+          <span className="h-1.5 w-1.5 rounded-full bg-white" />
+          LIVE
+        </span>
+      )}
+    </>
+  );
+
+  return (
+    <>
+      <Card
+        className={`overflow-hidden border-border bg-card shadow-sm transition-shadow hover:shadow-md ${
+          emphasis ? 'ring-1 ring-black/[0.04] dark:ring-white/[0.06]' : ''
+        }`}
+      >
+        {/* Tile header */}
+        <div
+          className={`flex items-center justify-between border-b border-border ${
+            emphasis ? 'px-3.5 py-2.5 sm:px-4' : 'px-3 py-2'
+          }`}
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <StatusBadge status={device.status} />
+            <span
+              className={`truncate font-semibold text-foreground ${
+                emphasis ? 'text-sm' : 'text-xs'
+              }`}
+            >
+              {device.name}
+            </span>
+          </div>
+          <div className="flex flex-shrink-0 items-center gap-0.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={emphasis ? 'h-8 w-8' : 'h-7 w-7'}
+              disabled={!canExpand}
+              title={canExpand ? 'Perbesar / layar penuh' : 'Tidak ada konten untuk diperbesar'}
+              onClick={openViewer}
+            >
+              <Maximize2 className={emphasis ? 'h-4 w-4' : 'h-3.5 w-3.5'} />
+            </Button>
+            {showAdminLink && (
+              <Link
+                to={`/devices/${encodeURIComponent(device.id)}/settings`}
+                className="rounded p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                title="Pengaturan perangkat / CCTV"
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </Link>
+            )}
+            {tab === 'snapshot' && device.cctvImagePath && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={emphasis ? 'h-8 w-8' : 'h-7 w-7'}
+                onClick={handleRefresh}
+                title="Refresh gambar"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${imgLoading ? 'animate-spin' : ''}`} />
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Tab switcher */}
+        <div
+          className={`flex gap-1 border-b border-border ${
+            emphasis ? 'px-2.5 py-1.5 sm:px-3' : 'px-2 py-1'
+          }`}
+        >
+          <button
+            onClick={() => setTab('snapshot')}
+            type="button"
+            className={`flex items-center gap-1 rounded-md font-medium transition-colors ${
+              emphasis ? 'px-2.5 py-1 text-[11px] sm:text-xs' : 'px-2 py-0.5 text-[10px]'
+            } ${tab === 'snapshot' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary'}`}
+          >
+            <Camera className={emphasis ? 'h-3.5 w-3.5' : 'h-3 w-3'} />
+            Snapshot
+          </button>
+          <button
+            onClick={() => setTab('live')}
+            type="button"
+            className={`flex items-center gap-1 rounded-md font-medium transition-colors ${
+              emphasis ? 'px-2.5 py-1 text-[11px] sm:text-xs' : 'px-2 py-0.5 text-[10px]'
+            } ${tab === 'live' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary'}`}
+          >
+            <Video className={emphasis ? 'h-3.5 w-3.5' : 'h-3 w-3'} />
+            Live
+            {hasStream && (
+              <span className="ml-0.5 rounded bg-red-500 px-0.5 text-[8px] font-bold text-white">ON</span>
+            )}
+          </button>
+        </div>
+
+        {/* Content */}
+        <div
+          className={`relative w-full bg-black ${
+            emphasis ? 'aspect-video min-h-[200px] sm:min-h-[240px] lg:min-h-[260px]' : 'aspect-video'
+          }`}
+        >
+          {tab === 'snapshot' ? renderSnapshotBody(false) : renderLiveBody(false)}
+          {canExpand && (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="absolute bottom-2 right-2 h-8 gap-1.5 bg-background/90 text-xs shadow-md backdrop-blur-sm hover:bg-background"
+              onClick={openViewer}
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+              Perbesar
+            </Button>
+          )}
+        </div>
+
+        <div
+          className={`flex items-center justify-between border-t border-border text-muted-foreground ${
+            emphasis ? 'px-3.5 py-2 text-[11px] sm:px-4 sm:text-xs' : 'px-3 py-1.5 text-[10px]'
+          }`}
+        >
+          <span>Level air saat ini:</span>
+          <span className="font-bold text-foreground">{device.waterLevel} cm</span>
+        </div>
+      </Card>
+
+      <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
+        <DialogContent
+          className={cn(
+            'flex h-[min(92vh,920px)] max-h-[92vh] w-[min(96vw,1280px)] max-w-[96vw] flex-col gap-0 overflow-hidden border-0 p-0 sm:rounded-xl',
+            '[&>button]:right-3 [&>button]:top-3 [&>button]:z-[60]'
+          )}
+        >
+          <DialogDescription className="sr-only">
+            Tampilan besar CCTV {viewerTab === 'snapshot' ? 'snapshot' : 'live'} untuk {device.name}.
+          </DialogDescription>
+          <DialogHeader className="shrink-0 space-y-0 border-b border-border bg-card px-4 py-3 pr-14 sm:px-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <DialogTitle className="text-left text-base font-semibold leading-snug sm:text-lg">
+                {device.name}
+                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                  {viewerTab === 'snapshot' ? 'Snapshot CCTV' : 'Live stream'}
+                </span>
+              </DialogTitle>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0 gap-2 self-start sm:self-auto"
+                onClick={toggleBrowserFullscreen}
+              >
+                {fsActive ? (
+                  <>
+                    <Minimize2 className="h-4 w-4" />
+                    Keluar layar penuh
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="h-4 w-4" />
+                    Layar penuh
+                  </>
+                )}
+              </Button>
+            </div>
+            <div className="mt-3 flex gap-1">
+              <button
+                type="button"
+                disabled={!canExpandSnapshot}
+                onClick={() => setViewerTab('snapshot')}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  viewerTab === 'snapshot'
+                    ? 'bg-primary/15 text-primary'
+                    : 'text-muted-foreground hover:bg-secondary disabled:opacity-40'
+                )}
+              >
+                Snapshot
+              </button>
+              <button
+                type="button"
+                disabled={!canExpandLive}
+                onClick={() => setViewerTab('live')}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  viewerTab === 'live'
+                    ? 'bg-primary/15 text-primary'
+                    : 'text-muted-foreground hover:bg-secondary disabled:opacity-40'
+                )}
+              >
+                Live
+              </button>
+            </div>
+          </DialogHeader>
+
+          <div
+            ref={fullscreenTargetRef}
+            className="relative min-h-[min(58vh,520px)] w-full flex-1 bg-black"
+          >
+            {viewerTab === 'snapshot' ? renderSnapshotBody(true) : renderLiveBody(true)}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -195,21 +410,81 @@ interface CctvPanelProps {
   devices: Device[];
   /** Tampilkan link pengaturan ke halaman admin (hanya untuk admin, bukan public). */
   showAdminLinks?: boolean;
+  /** Ukuran section & tile lebih besar, header lebih tegas (dashboard utama). */
+  emphasis?: boolean;
+  className?: string;
 }
 
-export function CctvPanel({ devices, showAdminLinks = false }: CctvPanelProps) {
+export function CctvPanel({
+  devices,
+  showAdminLinks = false,
+  emphasis = false,
+  className = '',
+}: CctvPanelProps) {
   if (!devices.length) return null;
 
   return (
-    <section>
-      <h2 className="mb-3 flex items-center gap-2 text-base font-bold text-foreground">
-        <Camera className="h-5 w-5 text-primary" />
-        Pantau CCTV
-      </h2>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {devices.map((d) => (
-          <CctvTile key={d.id} device={d} showAdminLink={showAdminLinks} />
-        ))}
+    <section
+      id="pantau-cctv"
+      aria-labelledby="cctv-panel-heading"
+      className={`relative overflow-hidden scroll-mt-24 rounded-2xl border border-border/80 bg-card/80 shadow-sm ring-1 ring-black/[0.04] dark:bg-card/40 dark:ring-white/[0.06] ${
+        emphasis ? 'p-5 sm:p-6 lg:p-7' : 'p-4 sm:p-5'
+      } ${className}`.trim()}
+    >
+      <div
+        className="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full bg-primary/[0.12] blur-3xl dark:bg-primary/[0.18]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-cyan-500/[0.08] blur-3xl dark:bg-cyan-400/[0.1]"
+        aria-hidden
+      />
+
+      <div className="relative">
+        <div className="mb-5 flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span
+              className={`flex shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/20 ${
+                emphasis ? 'h-11 w-11' : 'h-9 w-9'
+              }`}
+            >
+              <Camera className={emphasis ? 'h-5 w-5' : 'h-4 w-4'} strokeWidth={2.25} />
+            </span>
+            <div>
+              <h2
+                id="cctv-panel-heading"
+                className={`font-bold tracking-tight text-foreground ${
+                  emphasis ? 'text-lg sm:text-xl' : 'text-base'
+                }`}
+              >
+                Pantau CCTV
+              </h2>
+              <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                Snapshot terbaru dan live stream per titik pantau — gunakan ikon perbesar atau tombol &quot;Perbesar&quot; untuk tampilan besar dan opsi layar penuh.
+              </p>
+            </div>
+          </div>
+          <span className="inline-flex shrink-0 items-center rounded-full border border-border/80 bg-muted/40 px-3 py-1 text-[11px] font-medium tabular-nums text-muted-foreground">
+            {devices.length} kamera
+          </span>
+        </div>
+
+        <div
+          className={`grid ${
+            emphasis
+              ? 'gap-5 sm:grid-cols-2 xl:grid-cols-3'
+              : 'gap-4 sm:grid-cols-2 lg:grid-cols-3'
+          }`}
+        >
+          {devices.map((d) => (
+            <CctvTile
+              key={d.id}
+              device={d}
+              showAdminLink={showAdminLinks}
+              emphasis={emphasis}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );
