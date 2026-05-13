@@ -8,23 +8,17 @@ type Props = {
   /** Dipanggil saat verifikasi sukses; null jika expired/error. */
   onToken: (token: string | null) => void;
   className?: string;
-  /**
-   * true = token diperoleh saat `ref.execute()` (widget tersembunyi sampai dipanggil).
-   * Mempercepat load halaman vs challenge selalu aktif.
-   */
-  deferChallenge?: boolean;
 };
 
 /**
- * Cloudflare Turnstile — kirim token ke Supabase (`options.captchaToken`).
+ * Cloudflare Turnstile (mode managed): widget tampil, token diperoleh otomatis setelah cek selesai.
+ * Alur ini menghindari `ref.execute()` + `appearance: execute` yang di produksi sering memicu
+ * request 400 ke `challenges.cloudflare.com/.../flow/...`.
  *
- * Jangan meletakkan komponen ini di dalam `<form>` induk: widget Turnstile memakai
- * form sendiri; form bersarang memicu "Form submission canceled ... not connected".
- *
- * Di produksi dengan CSP ketat, izinkan `challenges.cloudflare.com` (frame-src, script-src).
+ * Jangan meletakkan komponen ini di dalam `<form>` induk: widget Turnstile memakai form sendiri.
  */
 export const TurnstileField = forwardRef<TurnstileInstance | null, Props>(function TurnstileField(
-  { onToken, className, deferChallenge = false },
+  { onToken, className },
   ref,
 ) {
   if (!siteKey) {
@@ -37,27 +31,17 @@ export const TurnstileField = forwardRef<TurnstileInstance | null, Props>(functi
     );
   }
 
-  const options = deferChallenge
-    ? {
-        theme: 'auto' as const,
-        language: 'id' as const,
-        execution: 'execute' as const,
-        appearance: 'execute' as const,
-        retry: 'auto' as const,
-        retryInterval: 2500,
-        refreshExpired: 'auto' as const,
-        refreshTimeout: 'auto' as const,
-      }
-    : {
-        theme: 'auto' as const,
-        language: 'id' as const,
-        execution: 'render' as const,
-        appearance: 'interaction-only' as const,
-        retry: 'auto' as const,
-        retryInterval: 2500,
-        refreshExpired: 'auto' as const,
-        refreshTimeout: 'auto' as const,
-      };
+  const options = {
+    theme: 'auto' as const,
+    language: 'id' as const,
+    appearance: 'always' as const,
+    execution: 'render' as const,
+    size: 'flexible' as const,
+    retry: 'auto' as const,
+    retryInterval: 8000,
+    refreshExpired: 'auto' as const,
+    refreshTimeout: 'auto' as const,
+  };
 
   return (
     <div className={className}>
