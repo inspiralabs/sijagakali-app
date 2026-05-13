@@ -28,7 +28,7 @@ export function DangerAlarm({ devices }: DangerAlarmProps) {
       newBahaya.forEach(d => {
         new Notification('⚠️ BAHAYA — SiJagaAir', {
           body: `${d.name} (${d.location}) — Level air ${d.waterLevel} cm telah melewati ambang AWAS!`,
-          icon: '/favicon.ico',
+          icon: '/favicon.svg',
           tag: `bahaya-${d.id}`,
           silent: true,
         });
