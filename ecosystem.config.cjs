@@ -7,10 +7,7 @@ module.exports = {
       args: "run preview -- --host 0.0.0.0 --port 4173",
       autorestart: true,
       max_restarts: 10,
-      restart_delay: 3000,
-      env: {
-        NODE_ENV: "production",
-      },
+      restart_delay: 3000
     },
   ],
 };
