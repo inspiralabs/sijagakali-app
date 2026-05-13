@@ -459,8 +459,8 @@ export function CctvPanel({
               >
                 Pantau CCTV
               </h2>
-              <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                Snapshot terbaru dan live stream per titik pantau — gunakan ikon perbesar atau tombol &quot;Perbesar&quot; untuk tampilan besar dan opsi layar penuh.
+              <p className="mt-0.5 max-w-prose text-[11px] leading-snug text-muted-foreground sm:text-xs">
+                Snapshot terbaru dan live stream dari berbagai titik pantau
               </p>
             </div>
           </div>
