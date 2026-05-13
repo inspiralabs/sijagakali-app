@@ -7,8 +7,6 @@ const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() ?? '';
 type Props = {
   /** Dipanggil saat verifikasi sukses; null jika expired/error. */
   onToken: (token: string | null) => void;
-  /** Callback opsional saat widget error. */
-  onError?: () => void;
   className?: string;
   /**
    * true = token diperoleh saat `ref.execute()` (widget tersembunyi sampai dipanggil).
@@ -26,7 +24,7 @@ type Props = {
  * Di produksi dengan CSP ketat, izinkan `challenges.cloudflare.com` (frame-src, script-src).
  */
 export const TurnstileField = forwardRef<TurnstileInstance | null, Props>(function TurnstileField(
-  { onToken, onError, className, deferChallenge = false },
+  { onToken, className, deferChallenge = false },
   ref,
 ) {
   if (!siteKey) {
@@ -71,7 +69,6 @@ export const TurnstileField = forwardRef<TurnstileInstance | null, Props>(functi
         onExpire={() => onToken(null)}
         onError={() => {
           onToken(null);
-          onError?.();
         }}
       />
     </div>

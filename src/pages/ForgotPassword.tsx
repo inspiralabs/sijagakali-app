@@ -53,7 +53,7 @@ export default function ForgotPassword() {
 
   const retryCaptchaIfNeeded = () => {
     if (!pendingCaptchaSubmitRef.current) return;
-    if (captchaRetryCountRef.current >= 2) {
+    if (captchaRetryCountRef.current >= 4) {
       setSubmitting(false);
       pendingCaptchaSubmitRef.current = false;
       toast.error('Verifikasi keamanan terlalu lama. Silakan coba lagi.');
@@ -66,7 +66,7 @@ export default function ForgotPassword() {
         turnstileRef.current?.reset();
         turnstileRef.current?.execute();
       }
-    }, 700);
+    }, 1200);
   };
 
   const handleCaptchaToken = (token: string | null) => {
@@ -138,8 +138,8 @@ export default function ForgotPassword() {
               <TurnstileField
                 ref={turnstileRef}
                 key={captchaMountKey}
+                deferChallenge
                 onToken={handleCaptchaToken}
-                onError={retryCaptchaIfNeeded}
                 className="flex min-h-[1px] items-center justify-center [&_iframe]:max-w-full"
               />
               <Button
