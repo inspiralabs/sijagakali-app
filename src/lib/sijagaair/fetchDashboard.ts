@@ -3,6 +3,12 @@ import type { Device, StatusLevel, WaterReading, AlertEvent } from '@/lib/types'
 import { getStatusFromLevel } from '@/lib/types';
 
 const HISTORY_CAP = 144;
+const DEVICE_CONFIGS_SELECT_BASE =
+  'deployment_slug, device_id, location_name, sensor_height_cm, read_interval_sec, threshold_waspada_cm, threshold_siaga_cm, threshold_bahaya_cm, last_seen_at, cctv_local_ip, stream_playback_url';
+const DEVICE_CONFIGS_SELECT_WITH_GEO_MAC =
+  `${DEVICE_CONFIGS_SELECT_BASE}, mac_address, latitude, longitude`;
+const DEVICE_CONFIGS_SELECT_FULL =
+  `${DEVICE_CONFIGS_SELECT_BASE}, mac_address, latitude, longitude, display_name`;
 
 /** Koordinat peta per `device_id` (DB belum menyimpan lat/lng). */
 const NODE_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -23,6 +29,10 @@ type DeviceConfigRow = {
   last_seen_at: string | null;
   cctv_local_ip?: string | null;
   stream_playback_url?: string | null;
+  mac_address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  display_name?: string | null;
 };
 
 type SensorReadingLite = {
@@ -69,16 +79,33 @@ function mapRowToDevice(
     latest && isStatusLevel(latest.water_status)
       ? latest.water_status
       : getStatusFromLevel(waterLevel, threshold);
-  const coords = NODE_COORDS[c.device_id] ?? { lat: -6.5, lng: 107.0 };
+  const fallbackCoords = NODE_COORDS[c.device_id] ?? { lat: -6.5, lng: 107.0 };
+  const lat =
+    c.latitude != null && Number.isFinite(c.latitude) ? Number(c.latitude) : fallbackCoords.lat;
+  const lng =
+    c.longitude != null && Number.isFinite(c.longitude) ? Number(c.longitude) : fallbackCoords.lng;
+  const mac =
+    typeof c.mac_address === 'string' && c.mac_address.trim().length > 0
+      ? c.mac_address.trim()
+      : `— ${c.device_id}`;
+
+  const locationLabel = c.location_name;
+  const display =
+    typeof c.display_name === 'string' && c.display_name.trim().length > 0
+      ? c.display_name.trim()
+      : null;
+  const nameForUi = display ?? locationLabel;
 
   return {
     id: c.device_id,
     deploymentSlug: c.deployment_slug,
-    name: c.location_name,
-    location: c.location_name,
-    mac: `— ${c.device_id}`,
-    lat: coords.lat,
-    lng: coords.lng,
+    sensorHeightCm: c.sensor_height_cm,
+    displayName: display,
+    name: nameForUi,
+    location: locationLabel,
+    mac,
+    lat,
+    lng,
     waterLevel,
     maxCapacity: Math.max(c.sensor_height_cm, threshold.awas + 50),
     threshold,
@@ -103,14 +130,37 @@ export async function fetchDashboardSnapshot(
   devices: Device[];
   histories: Record<string, WaterReading[]>;
 }> {
-  const { data: configs, error: errConfigs } = await supabase
+  const isMissingColumnError = (e: { message: string } | null) =>
+    Boolean(e && /column .* does not exist|could not find the .* column/i.test(e.message));
+
+  let { data: configs, error: errConfigs } = await supabase
     .from('device_configs')
-    .select(
-      'deployment_slug, device_id, location_name, sensor_height_cm, read_interval_sec, threshold_waspada_cm, threshold_siaga_cm, threshold_bahaya_cm, last_seen_at, cctv_local_ip, stream_playback_url'
-    )
+    .select(DEVICE_CONFIGS_SELECT_FULL)
     .eq('deployment_slug', deploymentSlug)
     .eq('is_active', true)
     .order('device_id');
+
+  // Kompatibilitas: migrasi parsial (mis. belum ada display_name atau belum ada geo/MAC).
+  if (isMissingColumnError(errConfigs)) {
+    const geoOnly = await supabase
+      .from('device_configs')
+      .select(DEVICE_CONFIGS_SELECT_WITH_GEO_MAC)
+      .eq('deployment_slug', deploymentSlug)
+      .eq('is_active', true)
+      .order('device_id');
+    configs = geoOnly.data;
+    errConfigs = geoOnly.error;
+  }
+  if (isMissingColumnError(errConfigs)) {
+    const baseOnly = await supabase
+      .from('device_configs')
+      .select(DEVICE_CONFIGS_SELECT_BASE)
+      .eq('deployment_slug', deploymentSlug)
+      .eq('is_active', true)
+      .order('device_id');
+    configs = baseOnly.data;
+    errConfigs = baseOnly.error;
+  }
 
   if (errConfigs) throw errConfigs;
 

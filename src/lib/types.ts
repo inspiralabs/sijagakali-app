@@ -8,8 +8,15 @@ export interface DeviceThreshold {
 
 export interface Device {
   id: string;
+  /** Tinggi sensor (cm) dari `device_configs.sensor_height_cm` saat data Supabase. */
+  sensorHeightCm?: number;
   /** Slug wilayah di Postgres; diisi saat data dari Supabase. */
   deploymentSlug?: string;
+  /**
+   * Nama singkat dari `device_configs.display_name` (Supabase).
+   * Null jika belum diisi; UI daftar memakai `name` yang sudah di-fallback ke lokasi.
+   */
+  displayName?: string | null;
   name: string;
   location: string;
   mac: string;

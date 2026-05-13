@@ -39,6 +39,8 @@ interface LiveDataCtx {
   updateDeviceCctv: (deviceId: string, payload: DeviceCctvFormPayload) => Promise<void>;
   /** Resolve signed URL untuk device tertentu (agendo pada cctv_image_path). */
   refreshCctvSignedUrl: (deviceId: string) => Promise<void>;
+  /** Muat ulang snapshot dashboard dari Supabase (no-op di mode mock). */
+  refreshDashboard: () => Promise<void>;
 }
 
 const Ctx = createContext<LiveDataCtx>({
@@ -52,6 +54,7 @@ const Ctx = createContext<LiveDataCtx>({
     toast.error('Penyimpanan CCTV tidak tersedia');
   },
   refreshCctvSignedUrl: async () => {},
+  refreshDashboard: async () => {},
 });
 
 const TICK_MS = 4000;
@@ -180,6 +183,8 @@ function MockLiveDataProvider({ children }: { children: ReactNode }) {
 
   const refreshCctvSignedUrl = useCallback(async (_deviceId: string) => {}, []);
 
+  const refreshDashboard = useCallback(async () => {}, []);
+
   return (
     <Ctx.Provider
       value={{
@@ -191,6 +196,7 @@ function MockLiveDataProvider({ children }: { children: ReactNode }) {
         supabaseError: null,
         updateDeviceCctv,
         refreshCctvSignedUrl,
+        refreshDashboard,
       }}
     >
       {children}
@@ -420,6 +426,28 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const refreshDashboard = useCallback(async () => {
+    if (authLoading) return;
+    const supabase = getSupabase();
+    if (!supabase) return;
+    try {
+      const [{ devices: d, histories: h }, alertHistory] = await Promise.all([
+        fetchDashboardSnapshot(supabase, slugRef.current),
+        fetchAlertHistory(supabase, slugRef.current),
+      ]);
+      setDevices(d);
+      setHistories(h);
+      setAlerts(alertHistory);
+      setLastUpdated(new Date().toISOString());
+      setSupabaseError(null);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setSupabaseError(msg);
+      toast.error('Gagal memuat ulang data', { description: msg });
+      throw e;
+    }
+  }, [authLoading]);
+
   const updateDeviceCctv = useCallback(
     async (deviceId: string, payload: DeviceCctvFormPayload) => {
       const supabase = getSupabase();
@@ -467,6 +495,7 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
         supabaseError,
         updateDeviceCctv,
         refreshCctvSignedUrl,
+        refreshDashboard,
       }}
     >
       {children}
