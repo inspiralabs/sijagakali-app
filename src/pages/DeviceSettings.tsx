@@ -17,7 +17,7 @@ const API_BASE = import.meta.env.VITE_SIJAGAAIRAPI_URL ?? '';
 
 export default function DeviceSettings() {
   const { id } = useParams();
-  const { devices, updateDeviceCctv } = useLiveData();
+  const { devices, updateDeviceCctv, refreshDashboard } = useLiveData();
   const { accessToken } = useAuth();
   const device = devices.find((d) => d.id === id) ?? devices[0];
 
@@ -29,6 +29,11 @@ export default function DeviceSettings() {
   const [cctvSaving, setCctvSaving] = useState(false);
 
   const [locationName, setLocationName] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [sensorHeightCm, setSensorHeightCm] = useState('');
+  const [macAddr, setMacAddr] = useState('');
+  const [latStr, setLatStr] = useState('');
+  const [lngStr, setLngStr] = useState('');
   const [tWaspada, setTWaspada] = useState('');
   const [tSiaga, setTSiaga] = useState('');
   const [tBahaya, setTBahaya] = useState('');
@@ -40,6 +45,11 @@ export default function DeviceSettings() {
     setCctvLocalIp(device.cctvLocalIp ?? '');
     setStreamPlaybackUrl(device.cctvUrl ?? '');
     setLocationName(device.location ?? '');
+    setDisplayName(device.displayName ?? '');
+    setSensorHeightCm(String(device.sensorHeightCm ?? 250));
+    setMacAddr(device.mac.startsWith('— ') ? '' : device.mac);
+    setLatStr(String(device.lat));
+    setLngStr(String(device.lng));
     setTWaspada(String(device.threshold.waspada));
     setTSiaga(String(device.threshold.siaga));
     setTBahaya(String(device.threshold.awas));
@@ -72,6 +82,13 @@ export default function DeviceSettings() {
     Authorization: `Bearer ${accessToken ?? ''}`,
   });
 
+  function parseOptionalCoord(raw: string): number | null {
+    const t = raw.trim();
+    if (!t) return null;
+    const n = Number(t);
+    return Number.isFinite(n) ? n : null;
+  }
+
   const handleCctvSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setCctvSaving(true);
@@ -92,21 +109,46 @@ export default function DeviceSettings() {
     }
     setSettingsSaving(true);
     try {
+      const sh = Number(sensorHeightCm);
+      if (!Number.isFinite(sh) || sh <= 0) {
+        toast.error('Tinggi sensor (cm) harus angka positif');
+        setSettingsSaving(false);
+        return;
+      }
+      const tw = tWaspada ? Number(tWaspada) : undefined;
+      const ts = tSiaga ? Number(tSiaga) : undefined;
+      const tb = tBahaya ? Number(tBahaya) : undefined;
+      if (
+        tw !== undefined &&
+        ts !== undefined &&
+        tb !== undefined &&
+        !(tw < ts && ts < tb)
+      ) {
+        toast.error('Ambang tidak valid: waspada < siaga < bahaya');
+        setSettingsSaving(false);
+        return;
+      }
       const res = await fetch(`${API_BASE}/api/device/${device.id}/settings`, {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({
           deployment_slug: device.deploymentSlug,
+          display_name: displayName.trim() ? displayName.trim() : null,
           location_name: locationName || undefined,
-          threshold_waspada_cm: tWaspada ? Number(tWaspada) : undefined,
-          threshold_siaga_cm: tSiaga ? Number(tSiaga) : undefined,
-          threshold_bahaya_cm: tBahaya ? Number(tBahaya) : undefined,
+          sensor_height_cm: sh,
+          mac_address: macAddr.trim() ? macAddr.trim() : null,
+          latitude: parseOptionalCoord(latStr),
+          longitude: parseOptionalCoord(lngStr),
+          threshold_waspada_cm: tw,
+          threshold_siaga_cm: ts,
+          threshold_bahaya_cm: tb,
         }),
       });
       if (!res.ok) {
         const body = (await res.json()) as { error?: string };
         throw new Error(body.error ?? 'Gagal menyimpan');
       }
+      await refreshDashboard();
       toast.success('Pengaturan perangkat disimpan');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -135,6 +177,7 @@ export default function DeviceSettings() {
         const body = (await res.json()) as { error?: string };
         throw new Error(body.error ?? 'Gagal menyimpan interval');
       }
+      await refreshDashboard();
       toast.success(`Interval laporan disimpan: ${formatInterval(interval[0])}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -158,6 +201,9 @@ export default function DeviceSettings() {
               <h2 className="text-lg font-bold text-foreground">{device.name}</h2>
               <StatusBadge status={device.status} />
             </div>
+            <p className="mt-1 max-w-xl text-xs text-muted-foreground">
+              Ubah nama, lokasi, tinggi sensor, MAC, koordinat, dan ambang lewat form di bawah. CCTV dan interval punya tombol simpan tersendiri.
+            </p>
           </div>
         </div>
 
@@ -172,12 +218,9 @@ export default function DeviceSettings() {
                   <MessageSquare className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground">Notifikasi WhatsApp</p>
+                  <p className="text-sm font-semibold text-foreground">Pengaturan Notifikasi</p>
                   <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                    Template pesan, kontak, uji kirim ke channel, log, dan aturan interval kirim otomatis — di halaman terpisah untuk titik pantau ini.
-                  </p>
-                  <p className="mt-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/80">
-                    Lanjutan pengaturan · WhatsApp &amp; log
+                    Konfigurasi template pesan, interval pengiriman pesan, dan pengaturan notifikasi lainnya.
                   </p>
                 </div>
               </div>
@@ -197,16 +240,6 @@ export default function DeviceSettings() {
               <dd className="font-mono text-xs text-foreground sm:min-w-0">{device.id}</dd>
             </div>
             <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
-              <dt className="shrink-0 text-xs font-medium text-muted-foreground sm:w-32">MAC Address</dt>
-              <dd className="font-mono text-xs text-foreground sm:min-w-0">{device.mac}</dd>
-            </div>
-            <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
-              <dt className="shrink-0 text-xs font-medium text-muted-foreground sm:w-32">Koordinat</dt>
-              <dd className="text-foreground tabular-nums sm:min-w-0">
-                {device.lat}, {device.lng}
-              </dd>
-            </div>
-            <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
               <dt className="shrink-0 text-xs font-medium text-muted-foreground sm:w-32">Level saat ini</dt>
               <dd className="font-semibold tabular-nums text-foreground">{device.waterLevel} cm</dd>
             </div>
@@ -214,11 +247,52 @@ export default function DeviceSettings() {
         </Card>
 
         <Card className="border-border bg-card p-4">
-          <h3 className="mb-3 font-semibold text-foreground">Konfigurasi Lokasi &amp; Ambang Batas</h3>
+          <h3 className="mb-3 font-semibold text-foreground">Data perangkat, lokasi &amp; ambang</h3>
           <form onSubmit={handleSettingsSave} className="space-y-4">
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Nama Lokasi</label>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Nama tampilan</label>
+              <Input
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Titik pantau 1"
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Nama singkat di daftar perangkat. Kosongkan agar kolom nama memakai teks lokasi.
+              </p>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Lokasi (deskripsi)</label>
               <Input value={locationName} onChange={(e) => setLocationName(e.target.value)} placeholder="Sungai Bojong Kulur Hilir" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Tinggi sensor dari dasar sungai (cm)</label>
+              <Input
+                type="number"
+                min={1}
+                max={50000}
+                value={sensorHeightCm}
+                onChange={(e) => setSensorHeightCm(e.target.value)}
+                placeholder="250"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">MAC Address</label>
+              <Input
+                value={macAddr}
+                onChange={(e) => setMacAddr(e.target.value)}
+                placeholder="A4:CF:12:7B:3E:01 (opsional)"
+                className="font-mono text-xs"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Latitude</label>
+                <Input type="number" step="any" value={latStr} onChange={(e) => setLatStr(e.target.value)} placeholder="-6.548" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Longitude</label>
+                <Input type="number" step="any" value={lngStr} onChange={(e) => setLngStr(e.target.value)} placeholder="107.012" />
+              </div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
@@ -236,7 +310,7 @@ export default function DeviceSettings() {
             </div>
             <Button type="submit" disabled={settingsSaving} className="gap-2">
               <Save className="h-4 w-4" />
-              {settingsSaving ? 'Menyimpan...' : 'Simpan Lokasi & Threshold'}
+              {settingsSaving ? 'Menyimpan...' : 'Simpan data perangkat'}
             </Button>
           </form>
         </Card>
@@ -247,16 +321,12 @@ export default function DeviceSettings() {
             <h3 className="font-semibold text-foreground">CCTV</h3>
           </div>
           <p className="mb-4 text-xs text-muted-foreground leading-relaxed">
-            <strong>Snapshot</strong> diambil di lapangan oleh node IoT; backend menyimpan berkas di Storage.{' '}
-            <strong>Live</strong> memakai URL playback (mis. HLS .m3u8) yang bisa diputar di browser.
+            Konfigurasi IP CCTV dan URL streaming (live) untuk dashboard.
           </p>
           <form className="space-y-4" onSubmit={handleCctvSubmit}>
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">IP kamera di LAN lapangan</label>
               <Input value={cctvLocalIp} onChange={(e) => setCctvLocalIp(e.target.value)} placeholder="192.168.1.50" autoComplete="off" />
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Referensi dokumentasi; node memakai IP ini untuk snapshot HTTP di jaringan lokal.
-              </p>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">URL streaming (live) untuk dashboard</label>
@@ -276,7 +346,7 @@ export default function DeviceSettings() {
         </Card>
 
         <Card className="border-border bg-card p-4">
-          <h3 className="mb-1 font-semibold text-foreground">Interval Laporan</h3>
+          <h3 className="mb-1 font-semibold text-foreground">Interval Pengiriman Data</h3>
           <p className="mb-3 text-xs text-muted-foreground">
             Seberapa sering perangkat mengirim data ke server. Saat hujan lebat disarankan 5–15 menit; saat kemarau bisa 1–4 jam.
           </p>

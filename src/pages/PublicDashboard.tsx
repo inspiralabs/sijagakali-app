@@ -59,7 +59,7 @@ export default function PublicDashboard() {
             </div>
             <div>
               <h1 className="text-lg font-bold tracking-tight text-foreground">SiJagaAir</h1>
-              <p className="text-[13px] text-muted-foreground">Early Warning System</p>
+              <p className="text-[13px] text-muted-foreground">Early Warning System - Desa Bojong Kulur</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -124,7 +124,7 @@ export default function PublicDashboard() {
                     Titik pantau
                   </h2>
                   <p className="mt-0.5 max-w-prose text-[11px] leading-snug text-muted-foreground sm:text-xs">
-                    Susunan kartu menyesuaikan lebar layar dan jumlah perangkat agar tetap sejajar dan mudah dibaca.
+                    Pantau level air di berbagai titik lokasi
                   </p>
                 </div>
               </div>
@@ -147,7 +147,7 @@ export default function PublicDashboard() {
                 <MapPin className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
                 <p className="text-sm font-medium text-foreground">Belum ada titik pantau aktif</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Data perangkat akan tampil di sini setelah konfigurasi di Supabase tersedia untuk deployment ini.
+                  Data perangkat akan tampil di sini setelah konfigurasi.
                 </p>
               </div>
             ) : (
@@ -180,8 +180,8 @@ export default function PublicDashboard() {
             >
               Tren & peringatan
             </h2>
-            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-              Historis level air dan peristiwa terbaru; di layar lebar grafik lebih lebar, log ringkas di samping.
+            <p className="mt-0.5 max-w-prose text-[11px] leading-snug text-muted-foreground sm:text-xs">
+              Historis level air dan peristiwa terbaru
             </p>
           </div>
           <div className="relative grid gap-6 lg:grid-cols-[7fr_3fr] lg:items-stretch lg:gap-6 xl:gap-8">
@@ -196,7 +196,7 @@ export default function PublicDashboard() {
       </main>
 
       <footer className="border-t border-border bg-card/80 px-4 py-4 text-center text-xs text-muted-foreground backdrop-blur-sm">
-        © {new Date().getFullYear()} Nawa Inspira Digital · Desa Bojong Kulur
+        © {new Date().getFullYear()} Nawa Inspira Digital · Sistem Informasi Jaga Air
       </footer>
     </div>
   );

@@ -12,14 +12,6 @@ export default function Dashboard() {
   return (
     <AppLayout>
       <div className="flex w-full flex-col gap-8 pb-2">
-        <header className="rounded-xl border border-border/80 bg-gradient-to-br from-card via-card to-muted/20 px-4 py-4 shadow-sm sm:px-6 sm:py-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/90">SiJagaAir</p>
-          <h1 className="mt-1 text-xl font-bold tracking-tight text-foreground sm:text-2xl">Dashboard Pemantauan</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Pantau kondisi air, status perangkat, dan peringatan penting secara real-time.
-          </p>
-        </header>
-
         <SummaryCards devices={devices} />
 
         <section className="flex flex-col gap-4">
@@ -50,8 +42,8 @@ export default function Dashboard() {
               >
                 Tren & peringatan
               </h2>
-              <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                Grafik historis memakai sebagian besar lebar; log peringatan ringkas di samping (~70% / 30%).
+              <p className="mt-0.5 max-w-prose text-[11px] leading-snug text-muted-foreground sm:text-xs">
+                Historis level air dan peristiwa terbaru
               </p>
             </div>
           </div>

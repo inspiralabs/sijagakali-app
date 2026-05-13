@@ -22,12 +22,30 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ArrowLeft, Bell, History, MessageSquare, RadioTower, Save, ShieldAlert } from 'lucide-react';
+import {
+  ArrowLeft,
+  Bell,
+  ChevronRight,
+  MessageSquare,
+  Phone,
+  RadioTower,
+  Save,
+  Settings2,
+  FilePenLine 
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { formatWIB } from '@/lib/utils';
 
 const API_BASE = import.meta.env.VITE_SIJAGAAIRAPI_URL ?? '';
+
+const TEMPLATE_STATUS_OPTIONS: { value: TemplateField; label: string }[] = [
+  { value: 'normal', label: 'Normal' },
+  { value: 'waspada', label: 'Waspada' },
+  { value: 'siaga', label: 'Siaga' },
+  { value: 'bahaya', label: 'Bahaya' },
+];
 
 function formatDigestInput(hours: number[]): string {
   return hours.join(', ');
@@ -82,6 +100,7 @@ export default function DeviceNotifications() {
   const [contactPosko, setContactPosko] = useState('');
   const [templateLoading, setTemplateLoading] = useState(false);
   const [templateSaving, setTemplateSaving] = useState(false);
+  const [activeTemplateField, setActiveTemplateField] = useState<TemplateField>('normal');
 
   const slug = device?.deploymentSlug ?? getDefaultDeploymentSlug();
 
@@ -177,7 +196,7 @@ export default function DeviceNotifications() {
       return;
     }
     const parsed = parseDigestInput(digestStr);
-    if (!parsed.ok) {
+    if (parsed.ok === false) {
       toast.error(parsed.error);
       return;
     }
@@ -321,6 +340,14 @@ export default function DeviceNotifications() {
     if (which === 'bahaya') setTplBahaya(append);
   };
 
+  const templateEditors = {
+    normal: { label: 'Normal', value: tplNormal, setValue: setTplNormal },
+    waspada: { label: 'Waspada', value: tplWaspada, setValue: setTplWaspada },
+    siaga: { label: 'Siaga', value: tplSiaga, setValue: setTplSiaga },
+    bahaya: { label: 'Bahaya', value: tplBahaya, setValue: setTplBahaya },
+  } satisfies Record<TemplateField, { label: string; value: string; setValue: (v: string) => void }>;
+  const activeTemplateRow = templateEditors[activeTemplateField];
+
   const applyBuiltinWaTemplates = () => {
     setTplNormal(WA_DEFAULT_NORMAL);
     setTplWaspada(WA_DEFAULT_WASPADA);
@@ -333,7 +360,7 @@ export default function DeviceNotifications() {
     return (
       <AppLayout>
         <Link to="/devices" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Kembali
+          <ArrowLeft className="h-4 w-4" /> Kembali ke Perangkat
         </Link>
         <p className="mt-4 text-sm text-muted-foreground">Tidak ada perangkat.</p>
       </AppLayout>
@@ -342,95 +369,101 @@ export default function DeviceNotifications() {
 
   return (
     <AppLayout>
-      <div className="mx-auto max-w-5xl space-y-8 pb-8">
-        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          <Link to="/devices" className="inline-flex items-center gap-1 hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Perangkat
-          </Link>
-          <span className="text-border">/</span>
-          <Link to={`/devices/${encodeURIComponent(device.id)}/settings`} className="hover:text-foreground">
-            Pengaturan
-          </Link>
+      <div className="space-y-5">
+        <Link to="/devices" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" /> Kembali ke Perangkat
+        </Link>
+
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Pengaturan notifikasi</p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-bold text-foreground">{device.name}</h2>
+            <StatusBadge status={device.status} />
+          </div>
+          <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+            Konfigurasi template pesan, interval pengiriman pesan, dan pengaturan notifikasi lainnya.
+          </p>
         </div>
 
-        <section className="relative overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/[0.08] via-card to-card px-5 py-7 shadow-sm md:px-8 md:py-9">
-          <div
-            className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rounded-full bg-primary/15 blur-3xl"
-            aria-hidden
-          />
-          <div className="pointer-events-none absolute bottom-0 left-0 h-32 w-full bg-gradient-to-t from-background/40 to-transparent" aria-hidden />
-          <div className="relative flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/90">SiJagaAir</p>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">Halaman Peringatan</h1>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
-                WhatsApp: template, kontak, uji kirim, log — serta aturan kapan pesan otomatis boleh dikirim untuk{' '}
-                <span className="font-medium text-foreground">{device.name}</span>.
-              </p>
+        <Link
+          to={`/devices/${encodeURIComponent(device.id)}/settings`}
+          className="group block rounded-xl border border-border bg-card p-4 shadow-sm ring-1 ring-border/60 transition-all hover:border-primary/35 hover:bg-muted/20 hover:ring-primary/15"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+                <Settings2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground">Pengaturan perangkat</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                  Lokasi, ambang batas, CCTV, dan interval pengiriman data.
+                </p>
+              </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2 rounded-xl border border-border/80 bg-background/60 px-3 py-2 backdrop-blur-sm">
-              <StatusBadge status={device.status} />
-              <span className="font-mono text-xs text-muted-foreground">{device.id}</span>
-            </div>
+            <span className="flex shrink-0 items-center gap-1 rounded-full border border-border bg-background/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors group-hover:border-primary/30 group-hover:text-primary">
+              Buka
+              <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-px" />
+            </span>
           </div>
-        </section>
+        </Link>
 
         {!isSupabaseConfigured() && (
-          <Card className="border-amber-500/30 bg-amber-500/5 p-4 text-sm text-amber-900 dark:text-amber-100">
-            Mode tanpa Supabase: halaman ini membutuhkan koneksi Supabase untuk memuat dan menyimpan data.
+          <Card className="border-amber-500/25 bg-amber-500/[0.06] p-4 text-sm text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-50">
+            
           </Card>
         )}
 
         {/* Kebijakan kirim otomatis */}
-        <Card className="overflow-hidden border-border/90 bg-card shadow-sm">
-          <div className="flex items-start gap-3 border-b border-border/80 bg-muted/30 px-5 py-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+        <Card className="border-border bg-card p-4">
+          <div className="mb-4 flex items-start gap-3 border-b border-border pb-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
               <RadioTower className="h-5 w-5" />
             </div>
-            <div>
-              <h2 className="text-base font-semibold text-foreground">Kebijakan kirim otomatis (WhatsApp)</h2>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-foreground">Kebijakan kirim otomatis (WhatsApp)</h3>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Cooldown = jeda minimum sebelum kirim ulang saat status sama. Lonjakan = delta cm dalam jendela waktu. Digest = jam
-                (WIB) saat status normal tetap bisa memicu laporan ringkas.
+                Cooldown: jeda minimum sebelum kirim ulang saat status sama. Lonjakan: delta cm dalam jendela waktu. Digest: jam (WIB)
+                untuk laporan ringkas saat status normal.
               </p>
             </div>
           </div>
-          <div className="space-y-4 p-5">
+          <div className="space-y-4">
             {policyLoading ? (
               <div className="h-24 animate-pulse rounded-lg bg-muted" />
             ) : (
               <>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Cooldown waspada (detik)</label>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-muted-foreground">Cooldown waspada (detik)</label>
                     <Input value={coolW} onChange={(e) => setCoolW(e.target.value)} type="number" min={0} className="font-mono text-sm" />
                   </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Cooldown siaga (detik)</label>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-muted-foreground">Cooldown siaga (detik)</label>
                     <Input value={coolS} onChange={(e) => setCoolS(e.target.value)} type="number" min={0} className="font-mono text-sm" />
                   </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Cooldown bahaya (detik)</label>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-muted-foreground">Cooldown bahaya (detik)</label>
                     <Input value={coolB} onChange={(e) => setCoolB(e.target.value)} type="number" min={0} className="font-mono text-sm" />
                   </div>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Lonjakan air (cm) dalam jendela</label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-muted-foreground">Lonjakan air (cm) dalam jendela</label>
                     <Input value={surgeDelta} onChange={(e) => setSurgeDelta(e.target.value)} type="number" min={0} step="0.1" className="font-mono text-sm" />
                   </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Jendela lonjakan (menit)</label>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-muted-foreground">Jendela lonjakan (menit)</label>
                     <Input value={surgeWin} onChange={(e) => setSurgeWin(e.target.value)} type="number" min={1} className="font-mono text-sm" />
                   </div>
                 </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Jam digest (WIB), pisahkan koma</label>
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-muted-foreground">Jam digest (WIB), pisahkan koma</label>
                   <Input value={digestStr} onChange={(e) => setDigestStr(e.target.value)} placeholder="8, 12, 17, 21" className="font-mono text-sm" />
                 </div>
                 <Button type="button" onClick={() => void handlePolicySave()} disabled={policySaving || !isSupabaseConfigured()} className="gap-2">
                   <Save className="h-4 w-4" />
-                  {policySaving ? 'Menyimpan...' : 'Simpan kebijakan'}
+                  {policySaving ? 'Menyimpan...' : 'Simpan'}
                 </Button>
               </>
             )}
@@ -439,26 +472,31 @@ export default function DeviceNotifications() {
 
         {/* Test */}
         {isSupabaseConfigured() && (
-          <Card className="border-border/90 bg-card p-5 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(var(--status-waspada)/0.15)] text-[hsl(var(--status-waspada))]">
-                <Bell className="h-4 w-4" />
+          <Card className="border-border bg-card p-4">
+            <div className="mb-4 flex items-start gap-3 border-b border-border pb-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+                <Bell className="h-5 w-5" />
               </div>
-              <h2 className="text-base font-semibold text-foreground">Test ke channel WhatsApp</h2>
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold text-foreground">Test Notifikasi</h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  Simulasikan status dan ketinggian air, lalu kirim ke WhatsApp Channel.
+                </p>
+              </div>
             </div>
             <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-xs font-medium text-muted-foreground">Status simulasi</label>
+              <div className="grid gap-4 sm:grid-cols-2 sm:items-end">
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-muted-foreground">Status simulasi</label>
                   <div className="flex flex-wrap gap-2">
                     {STATUS_OPTIONS.map((opt) => (
                       <button
                         key={opt.value}
                         type="button"
                         onClick={() => setTestStatus(opt.value)}
-                        className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition-all ${
+                        className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
                           testStatus === opt.value
-                            ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                            ? 'border-primary bg-primary/10 text-primary'
                             : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
                         }`}
                       >
@@ -467,15 +505,15 @@ export default function DeviceNotifications() {
                     ))}
                   </div>
                 </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Ketinggian air (cm)</label>
+                <div className="max-w-[280px] space-y-1">
+                  <label className="block text-xs font-medium text-muted-foreground">Ketinggian air (cm)</label>
                   <Input type="number" min={0} value={testLevel} onChange={(e) => setTestLevel(e.target.value)} placeholder="75" />
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="inline-flex w-fit max-w-full items-center gap-2 rounded-md border border-border/80 bg-muted/30 px-3 py-2.5">
                 <Checkbox id="cctv-test" checked={testIncludeCctv} onCheckedChange={(v) => setTestIncludeCctv(Boolean(v))} />
-                <label htmlFor="cctv-test" className="cursor-pointer text-xs text-muted-foreground">
-                  Sertakan foto CCTV terakhir
+                <label htmlFor="cctv-test" className="cursor-pointer text-xs text-muted-foreground leading-snug">
+                  Sertakan foto CCTV
                 </label>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -487,7 +525,7 @@ export default function DeviceNotifications() {
                 </Button>
               </div>
               {testPreview ? (
-                <pre className="max-h-64 overflow-auto rounded-xl border border-border/80 bg-muted/40 p-4 text-xs leading-relaxed whitespace-pre-wrap font-mono">
+                <pre className="max-h-64 overflow-auto rounded-lg border border-border bg-muted/40 p-3 text-xs leading-relaxed whitespace-pre-wrap font-mono">
                   {testPreview}
                 </pre>
               ) : null}
@@ -495,137 +533,126 @@ export default function DeviceNotifications() {
           </Card>
         )}
 
-        {/* Template */}
+        {/* Template WhatsApp */}
         {isSupabaseConfigured() && (
-          <Card className="border-border/90 bg-card shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/80 px-5 py-4">
-              <div className="flex items-start gap-3">
+          <>
+            <Card className="border-border bg-card p-4">
+              <div className="mb-4 flex items-start gap-3 border-b border-border pb-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
                   <MessageSquare className="h-5 w-5" />
                 </div>
-                <div>
-                  <h2 className="text-base font-semibold text-foreground">Template & kontak</h2>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Disimpan di deployment <span className="font-mono text-foreground">{slug}</span> — sama untuk semua node wilayah ini.
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-foreground">Template WhatsApp</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Isi pesan untuk setiap status (Normal, Waspada, Siaga, Bahaya).
                   </p>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={applyBuiltinWaTemplates} disabled={templateLoading}>
-                  Isi contoh
-                </Button>
-                <Button type="button" size="sm" className="gap-1" onClick={() => void handleTemplateSave()} disabled={templateSaving || templateLoading}>
-                  <Save className="h-4 w-4" />
-                  {templateSaving ? 'Menyimpan…' : 'Simpan'}
-                </Button>
-              </div>
-            </div>
-            <div className="p-5">
-              {templateLoading ? (
-                <div className="h-48 animate-pulse rounded-lg bg-muted" />
-              ) : (
-                <div className="space-y-6">
-                  {(
-                    [
-                      { key: 'normal' as const, label: 'Normal', val: tplNormal, set: setTplNormal },
-                      { key: 'waspada' as const, label: 'Waspada', val: tplWaspada, set: setTplWaspada },
-                      { key: 'siaga' as const, label: 'Siaga', val: tplSiaga, set: setTplSiaga },
-                      { key: 'bahaya' as const, label: 'Bahaya', val: tplBahaya, set: setTplBahaya },
-                    ] as const
-                  ).map((row) => (
-                    <div key={row.key}>
-                      <label className="mb-1 block text-xs font-medium text-foreground">{row.label}</label>
-                      <div className="mb-2 flex max-h-24 flex-wrap gap-1 overflow-y-auto rounded-md border border-dashed border-border/80 bg-muted/20 p-2">
+              <div>
+                {templateLoading ? (
+                  <div className="h-48 animate-pulse rounded-lg bg-muted" />
+                ) : (
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <label htmlFor="wa-template-status" className="block text-xs font-medium text-muted-foreground">
+                        Template untuk status
+                      </label>
+                      <Select value={activeTemplateField} onValueChange={(v) => setActiveTemplateField(v as TemplateField)}>
+                        <SelectTrigger id="wa-template-status" className="h-9 w-full text-xs sm:max-w-md">
+                          <SelectValue placeholder="Pilih status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TEMPLATE_STATUS_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <span className="block text-xs font-medium text-muted-foreground">Sisipkan placeholder</span>
+                      <div className="flex max-h-[5.5rem] flex-wrap gap-1.5 overflow-y-auto rounded-md border border-dashed border-border bg-muted/30 p-2.5">
                         {PLACEHOLDERS.map((ph) => (
                           <button
                             key={ph}
                             type="button"
-                            onClick={() => insertPlaceholder(row.key, ph)}
-                            className="rounded-md border border-primary/20 bg-primary/5 px-1.5 py-0.5 font-mono text-[10px] text-primary transition-colors hover:bg-primary/10"
+                            onClick={() => insertPlaceholder(activeTemplateField, ph)}
+                            className="rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 font-mono text-[10px] text-primary transition-colors hover:bg-primary/10"
                           >
                             {ph}
                           </button>
                         ))}
                       </div>
-                      <Textarea value={row.val} onChange={(e) => row.set(e.target.value)} rows={5} className="resize-y font-mono text-xs" />
                     </div>
-                  ))}
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div>
-                      <label className="mb-1 block text-xs text-muted-foreground">Kontak petugas</label>
-                      <Input value={contactPetugas} onChange={(e) => setContactPetugas(e.target.value)} />
+                    <div className="space-y-1">
+                      <label htmlFor="wa-template-body" className="block text-xs font-medium text-muted-foreground">
+                        Isi pesan ({activeTemplateRow.label})
+                      </label>
+                      <Textarea
+                        id="wa-template-body"
+                        value={activeTemplateRow.value}
+                        onChange={(e) => activeTemplateRow.setValue(e.target.value)}
+                        rows={10}
+                        className="min-h-[220px] resize-y font-mono text-xs"
+                      />
                     </div>
-                    <div>
-                      <label className="mb-1 block text-xs text-muted-foreground">BPBD</label>
-                      <Input value={contactBpbd} onChange={(e) => setContactBpbd(e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs text-muted-foreground">Posko</label>
-                      <Input value={contactPosko} onChange={(e) => setContactPosko(e.target.value)} />
+                    <div className="flex flex-col gap-3 border-t border-border pt-4">
+                      <div className="flex flex-wrap gap-2">
+                        <Button type="button" variant="outline" onClick={applyBuiltinWaTemplates} disabled={templateLoading} className="gap-2">
+                          <FilePenLine className="h-4 w-4" />
+                          Gunakan Template
+                        </Button>
+                        <Button type="button" className="gap-2" onClick={() => void handleTemplateSave()} disabled={templateSaving || templateLoading}>
+                          <Save className="h-4 w-4" />
+                          {templateSaving ? 'Menyimpan…' : 'Simpan'}
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </Card>
-        )}
-
-        {/* Log */}
-        <Card className="border-border/90 bg-card shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 px-5 py-4">
-            <div className="flex items-center gap-2">
-              <History className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-base font-semibold text-foreground">Log notifikasi</h2>
-            </div>
-            <Button type="button" variant="outline" size="sm" onClick={() => void loadLogs()} disabled={logsLoading || !isSupabaseConfigured()}>
-              {logsLoading ? 'Memuat…' : 'Segarkan'}
-            </Button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">Waktu</th>
-                  <th className="px-4 py-3 font-medium">Status air</th>
-                  <th className="px-4 py-3 font-medium">Saluran</th>
-                  <th className="px-4 py-3 font-medium">Hasil</th>
-                  <th className="px-4 py-3 font-medium hidden md:table-cell">Catatan</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map((row) => (
-                  <tr key={row.id} className="border-b border-border/80 last:border-0">
-                    <td className="whitespace-nowrap px-4 py-2.5 text-xs text-muted-foreground">{formatWIB(row.sent_at)}</td>
-                    <td className="px-4 py-2.5 font-medium capitalize">{row.water_status ?? '—'}</td>
-                    <td className="px-4 py-2.5 text-muted-foreground">{row.channel}</td>
-                    <td className="px-4 py-2.5">
-                      {row.status === 'sent' ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
-                          terkirim
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive">
-                          <ShieldAlert className="h-3 w-3" />
-                          gagal
-                        </span>
-                      )}
-                    </td>
-                    <td className="hidden max-w-xs truncate px-4 py-2.5 text-xs text-muted-foreground md:table-cell" title={row.error_message ?? ''}>
-                      {row.error_message ?? '—'}
-                    </td>
-                  </tr>
-                ))}
-                {logs.length === 0 && !logsLoading && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                      Belum ada log untuk perangkat ini.
-                    </td>
-                  </tr>
                 )}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+              </div>
+            </Card>
+
+            <Card className="border-border bg-card p-4">
+              <div className="mb-4 flex items-start gap-3 border-b border-border pb-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+                  <Phone className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-foreground">Kontak</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Nomor untuk placeholder di template (opsional).
+                  </p>
+                </div>
+              </div>
+              <div className="grid gap-3 lg:grid-cols-3">
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-muted-foreground">Petugas</label>
+                  <Input value={contactPetugas} onChange={(e) => setContactPetugas(e.target.value)} disabled={templateLoading} />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-muted-foreground">BPBD</label>
+                  <Input value={contactBpbd} onChange={(e) => setContactBpbd(e.target.value)} disabled={templateLoading} />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-muted-foreground">Posko</label>
+                  <Input value={contactPosko} onChange={(e) => setContactPosko(e.target.value)} disabled={templateLoading} />
+                </div>
+                <div className="flex flex-col gap-3 border-t border-border pt-4 lg:col-span-3">
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    <span className="font-medium text-foreground">Simpan</span> di sini sama dengan di kartu Template — menulis ke database semua template beserta
+                    kontak di atas sekaligus.
+                  </p>
+                  <Button type="button" size="sm" className="w-fit gap-2" onClick={() => void handleTemplateSave()} disabled={templateSaving || templateLoading}>
+                    <Save className="h-4 w-4" />
+                    {templateSaving ? 'Menyimpan…' : 'Simpan'}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </>
+        )}
       </div>
     </AppLayout>
   );
