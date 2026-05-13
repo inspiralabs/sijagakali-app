@@ -84,6 +84,10 @@ export default function Devices() {
     Authorization: `Bearer ${accessToken ?? ''}`,
   });
 
+  const authHeadersBearerOnly = () => ({
+    Authorization: `Bearer ${accessToken ?? ''}`,
+  });
+
   const openCreate = () => {
     setForm(fromSupabase ? { ...EMPTY, reportInterval: '3600' } : { ...EMPTY });
     setDialogOpen(true);
@@ -228,7 +232,7 @@ export default function Devices() {
     try {
       const res = await fetch(
         `${API_BASE}/api/device/${encodeURIComponent(confirmDeleteId)}?deployment_slug=${encodeURIComponent(slug)}`,
-        { method: 'DELETE', headers: authHeaders() }
+        { method: 'DELETE', headers: authHeadersBearerOnly() }
       );
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };

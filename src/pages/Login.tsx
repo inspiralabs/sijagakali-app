@@ -1,10 +1,9 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Eye, EyeOff, Waves } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useNavigate, Link } from 'react-router-dom';
-import type { TurnstileInstance } from '@marsidev/react-turnstile';
 import { useAuth } from '@/lib/authContext';
 import { toast } from 'sonner';
 import { isSupabaseConfigured } from '@/lib/sijagaairEnv';
@@ -21,17 +20,14 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
-  const turnstileRef = useRef<TurnstileInstance | null>(null);
-  const pendingCaptchaSubmitRef = useRef(false);
-  const captchaRetryCountRef = useRef(0);
 
   const captchaRequired = isSupabaseConfigured() && isTurnstileConfigured();
+  const captchaReady = !captchaRequired || Boolean(captchaToken);
 
   const finishLogin = async (token?: string | null) => {
     setSubmitting(true);
     const result = await login(email, password, token ?? undefined);
     setSubmitting(false);
-    pendingCaptchaSubmitRef.current = false;
     if (result.error) {
       toast.error(result.error);
       setCaptchaToken(null);
@@ -42,47 +38,15 @@ export default function Login() {
     }
   };
 
-  const retryCaptchaIfNeeded = () => {
-    if (!pendingCaptchaSubmitRef.current) return;
-    if (captchaRetryCountRef.current >= 4) {
-      setSubmitting(false);
-      pendingCaptchaSubmitRef.current = false;
-      toast.error('Verifikasi keamanan terlalu lama. Silakan coba lagi.');
-      return;
-    }
-
-    captchaRetryCountRef.current += 1;
-    window.setTimeout(() => {
-      if (pendingCaptchaSubmitRef.current) {
-        turnstileRef.current?.reset();
-        turnstileRef.current?.execute();
-      }
-    }, 1200);
-  };
-
   const handleCaptchaToken = (token: string | null) => {
     setCaptchaToken(token);
-
-    if (pendingCaptchaSubmitRef.current && token) {
-      captchaRetryCountRef.current = 0;
-      pendingCaptchaSubmitRef.current = false;
-      void finishLogin(token);
-      return;
-    }
-
-    if (pendingCaptchaSubmitRef.current && !token) {
-      retryCaptchaIfNeeded();
-    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (captchaRequired && !captchaToken) {
-      pendingCaptchaSubmitRef.current = true;
-      captchaRetryCountRef.current = 0;
-      setSubmitting(true);
-      turnstileRef.current?.execute();
+      toast.error('Mohon tunggu verifikasi keamanan selesai di bawah, lalu coba lagi.');
       return;
     }
 
@@ -100,7 +64,6 @@ export default function Login() {
           <p className="text-xs text-muted-foreground">Login Admin — Early Warning System</p>
         </div>
 
-        {/* Turnstile TIDAK di dalam <form> — hindari form bersarang dengan form internal widget */}
         <div className="space-y-4">
           <form id={LOGIN_FORM_ID} onSubmit={handleLogin} className="space-y-4">
             <div>
@@ -108,7 +71,7 @@ export default function Login() {
               <Input
                 type="email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@sijagaair.com"
                 required
                 autoComplete="email"
@@ -120,7 +83,7 @@ export default function Login() {
                 <Input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
                   autoComplete="current-password"
@@ -139,21 +102,19 @@ export default function Login() {
           </form>
 
           {isSupabaseConfigured() && (
-            <TurnstileField
-              ref={turnstileRef}
-              key={captchaMountKey}
-              deferChallenge
-              onToken={handleCaptchaToken}
-              className="flex min-h-[1px] items-center justify-center [&_iframe]:max-w-full"
-            />
+            <div className="space-y-1">
+              <TurnstileField
+                key={captchaMountKey}
+                onToken={handleCaptchaToken}
+                className="flex min-h-[65px] items-center justify-center [&_iframe]:max-w-full"
+              />
+              {captchaRequired && !captchaToken && (
+                <p className="text-center text-[11px] text-muted-foreground">Memuat verifikasi keamanan…</p>
+              )}
+            </div>
           )}
 
-          <Button
-            type="submit"
-            form={LOGIN_FORM_ID}
-            className="w-full"
-            disabled={submitting}
-          >
+          <Button type="submit" form={LOGIN_FORM_ID} className="w-full" disabled={submitting || !captchaReady}>
             {submitting ? 'Memproses...' : 'Masuk'}
           </Button>
         </div>
@@ -161,13 +122,13 @@ export default function Login() {
         <div className="mt-4 space-y-2 text-center">
           {isSupabaseConfigured() && (
             <div>
-              <Link to="/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/forgot-password" className="text-xs text-muted-foreground transition-colors hover:text-primary">
                 Lupa kata sandi?
               </Link>
             </div>
           )}
           <div>
-            <Link to="/public" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+            <Link to="/public" className="text-xs text-muted-foreground transition-colors hover:text-primary">
               ← Kembali ke Dashboard Publik
             </Link>
           </div>

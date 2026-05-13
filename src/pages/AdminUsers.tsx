@@ -11,6 +11,16 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -53,16 +63,24 @@ export default function AdminUsers() {
   const [formPassword, setFormPassword] = useState('');
   const [showFormPassword, setShowFormPassword] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
+  const [confirmDeleteAdmin, setConfirmDeleteAdmin] = useState<AdminUser | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
-  const authHeaders = useCallback(() => ({
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${accessToken ?? ''}`,
-  }), [accessToken]);
+  const authHeaders = useCallback(
+    (withJsonBody: boolean) => {
+      const h: Record<string, string> = {
+        Authorization: `Bearer ${accessToken ?? ''}`,
+      };
+      if (withJsonBody) h['Content-Type'] = 'application/json';
+      return h;
+    },
+    [accessToken],
+  );
 
   const fetchAdmins = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/admins`, { headers: authHeaders() });
+      const res = await fetch(`${API_BASE}/api/admins`, { headers: authHeaders(false) });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json() as { admins: AdminUser[] };
       setAdmins(data.admins);
@@ -106,7 +124,7 @@ export default function AdminUsers() {
       if (dialogMode === 'add') {
         const res = await fetch(`${API_BASE}/api/admins`, {
           method: 'POST',
-          headers: authHeaders(),
+          headers: authHeaders(true),
           body: JSON.stringify({
             email: formEmail,
             password: formPassword,
@@ -126,7 +144,7 @@ export default function AdminUsers() {
 
         const res = await fetch(`${API_BASE}/api/admins/${editTarget.id}`, {
           method: 'PATCH',
-          headers: authHeaders(),
+          headers: authHeaders(true),
           body: JSON.stringify(body),
         });
         if (!res.ok) {
@@ -146,23 +164,32 @@ export default function AdminUsers() {
     }
   };
 
-  const handleDelete = async (admin: AdminUser) => {
-    if (!window.confirm(`Hapus admin ${admin.email}? Tindakan ini tidak dapat dibatalkan.`)) return;
+  const requestDelete = (admin: AdminUser) => {
+    if (admin.is_default) return;
+    setConfirmDeleteAdmin(admin);
+  };
 
+  const executeDelete = async () => {
+    const admin = confirmDeleteAdmin;
+    if (!admin) return;
+    setDeleteSubmitting(true);
     try {
       const res = await fetch(`${API_BASE}/api/admins/${admin.id}`, {
         method: 'DELETE',
-        headers: authHeaders(),
+        headers: authHeaders(false),
       });
       if (!res.ok) {
         const body = await res.json() as { error?: string };
         throw new Error(body.error ?? 'Gagal menghapus admin');
       }
       toast.success(`Admin ${admin.email} dihapus`);
+      setConfirmDeleteAdmin(null);
       await fetchAdmins();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(msg);
+    } finally {
+      setDeleteSubmitting(false);
     }
   };
 
@@ -217,7 +244,7 @@ export default function AdminUsers() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleDelete(admin)}
+                          onClick={() => requestDelete(admin)}
                           disabled={admin.is_default}
                           className="h-8 w-8 p-0 text-destructive hover:text-destructive disabled:opacity-40"
                         >
@@ -278,7 +305,7 @@ export default function AdminUsers() {
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={() => handleDelete(admin)}
+                                    onClick={() => requestDelete(admin)}
                                     disabled={admin.is_default}
                                     className="h-8 w-8 p-0 text-destructive hover:text-destructive disabled:opacity-40"
                                   >
@@ -372,6 +399,34 @@ export default function AdminUsers() {
             </form>
           </DialogContent>
         </Dialog>
+        <AlertDialog
+          open={!!confirmDeleteAdmin}
+          onOpenChange={(open) => !open && !deleteSubmitting && setConfirmDeleteAdmin(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Hapus admin?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {confirmDeleteAdmin
+                  ? `Akun ${confirmDeleteAdmin.email} akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`
+                  : ''}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleteSubmitting}>Batal</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  void executeDelete();
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={deleteSubmitting}
+              >
+                {deleteSubmitting ? 'Menghapus…' : 'Hapus'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AppLayout>
   );
