@@ -5,7 +5,8 @@ import { AlertLog } from '@/components/AlertLog';
 import { SummaryCards } from '@/components/SummaryCards';
 import { DangerAlarm } from '@/components/DangerAlarm';
 import { CctvPanel } from '@/components/CctvPanel';
-import { Waves, LogIn, Sun, Moon, Volume2, VolumeX, MapPin, Radio } from 'lucide-react';
+import { LogIn, Sun, Moon, Volume2, VolumeX, MapPin, Radio } from 'lucide-react';
+import { AppBrandLogo } from '@/components/AppBrandLogo';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -54,8 +55,11 @@ export default function PublicDashboard() {
       <header className="sticky top-0 z-40 border-b border-border/80 bg-card/90 px-4 py-3 shadow-sm backdrop-blur-md sm:px-6">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/20">
-              <Waves className="h-5 w-5" />
+            <div className="flex shrink-0 items-center justify-center rounded-xl bg-primary/12 p-1.5 ring-1 ring-primary/20 sm:p-2">
+              <AppBrandLogo
+                className="h-7 w-7 sm:h-[clamp(1.75rem,4.5vw,2.25rem)] sm:w-[clamp(1.75rem,4.5vw,2.25rem)] md:h-10 md:w-10"
+                alt=""
+              />
             </div>
             <div>
               <h1 className="text-lg font-bold tracking-tight text-foreground">SiJagaAir</h1>

@@ -44,7 +44,7 @@ export function SummaryCards({ devices }: SummaryCardsProps) {
       {cards.map((c) => (
         <Card key={c.label} className="flex items-center gap-3 border-border bg-card p-3.5 sm:p-4">
           <div className={`rounded-lg bg-secondary p-2 ${c.accent} sm:p-2.5`}>
-            <c.icon className="h-5 w-5" />
+            <c.icon className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{c.label}</p>

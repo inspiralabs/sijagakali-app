@@ -1,4 +1,5 @@
-import { LayoutDashboard, Server, Bell, Waves, FileText, LogOut, Users } from 'lucide-react';
+import { LayoutDashboard, Server, Bell, FileText, LogOut, Users } from 'lucide-react';
+import { AppBrandLogo } from '@/components/AppBrandLogo';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Sidebar,
@@ -41,7 +42,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-2">
-          <Waves className="h-6 w-6 text-primary flex-shrink-0" />
+          <AppBrandLogo className="h-6 w-6 shrink-0 sm:h-7 sm:w-7" alt="" />
           {!collapsed && <span className="text-lg font-bold">SiJagaAir</span>}
         </div>
       </SidebarHeader>

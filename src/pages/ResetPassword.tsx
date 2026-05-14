@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Eye, EyeOff, Waves } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
+import { AppBrandLogo } from '@/components/AppBrandLogo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -64,7 +65,7 @@ export default function ResetPassword() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <Card className="w-full max-w-sm border-border bg-card p-8 text-center">
-          <Waves className="mx-auto mb-4 h-10 w-10 text-primary" />
+          <AppBrandLogo className="mx-auto mb-4 h-[clamp(2.5rem,8vw,3.5rem)] w-[clamp(2.5rem,8vw,3.5rem)]" />
           <p className="text-sm text-muted-foreground">Memvalidasi link reset kata sandi...</p>
           <p className="mt-2 text-xs text-muted-foreground">
             Pastikan Anda membuka halaman ini dari link yang dikirimkan ke email Anda.
@@ -78,9 +79,7 @@ export default function ResetPassword() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm border-border bg-card p-8">
         <div className="mb-6 flex flex-col items-center gap-2">
-          <div className="flex items-center gap-2 text-primary">
-            <Waves className="h-10 w-10" />
-          </div>
+          <AppBrandLogo className="h-[clamp(2.5rem,8vw,3.5rem)] w-[clamp(2.5rem,8vw,3.5rem)]" />
           <h1 className="text-2xl font-bold text-foreground">Buat Kata Sandi Baru</h1>
           <p className="text-xs text-muted-foreground">Minimal 6 karakter</p>
         </div>

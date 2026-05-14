@@ -1,4 +1,5 @@
-import { Waves, LogOut, User, Sun, Moon, Volume2, VolumeX, Siren, Bell, BellOff } from 'lucide-react';
+import { LogOut, User, Sun, Moon, Volume2, VolumeX, Siren, Bell, BellOff } from 'lucide-react';
+import { AppBrandLogo } from '@/components/AppBrandLogo';
 import { formatWIB } from '@/lib/utils';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -30,7 +31,10 @@ export function TopBar({ lastUpdated, onLogout, showSidebarTrigger }: TopBarProp
       <div className="flex items-center gap-3">
         {showSidebarTrigger && <SidebarTrigger className="lg:flex" />}
         <div className="flex items-center gap-2">
-          <Waves className="h-6 w-6 text-primary lg:hidden" />
+          <AppBrandLogo
+            className="h-[clamp(1.25rem,3.2vw,1.75rem)] w-[clamp(1.25rem,3.2vw,1.75rem)] shrink-0 lg:hidden"
+            alt=""
+          />
           <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg lg:hidden">
             SiJagaAir
           </h1>
