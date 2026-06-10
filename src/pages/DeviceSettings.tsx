@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ArrowLeft, Video, Save, MessageSquare, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Video, Save, MessageSquare, ChevronRight, CloudRain } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -39,6 +39,10 @@ export default function DeviceSettings() {
   const [tBahaya, setTBahaya] = useState('');
   const [settingsSaving, setSettingsSaving] = useState(false);
 
+  const [bmkgAdm4, setBmkgAdm4] = useState('');
+  const [nowcastKeywords, setNowcastKeywords] = useState('');
+  const [weatherSaving, setWeatherSaving] = useState(false);
+
   useEffect(() => {
     if (!device) return;
     setInterval([device.reportInterval]);
@@ -53,6 +57,8 @@ export default function DeviceSettings() {
     setTWaspada(String(device.threshold.waspada));
     setTSiaga(String(device.threshold.siaga));
     setTBahaya(String(device.threshold.awas));
+    setBmkgAdm4(device.bmkgAdm4 ?? '');
+    setNowcastKeywords((device.bmkgNowcastKeywords ?? []).join(', '));
   }, [device?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!device) {
@@ -155,6 +161,48 @@ export default function DeviceSettings() {
       toast.error(msg);
     } finally {
       setSettingsSaving(false);
+    }
+  };
+
+  const ADM4_RE = /^\d{2}\.\d{2}\.\d{2}\.\d{4}$/;
+
+  const handleWeatherSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isSupabaseConfigured()) {
+      toast.info('Simpan pengaturan cuaca hanya tersedia dalam mode Supabase');
+      return;
+    }
+    const trimmedAdm4 = bmkgAdm4.trim();
+    if (trimmedAdm4 && !ADM4_RE.test(trimmedAdm4)) {
+      toast.error('Format kode ADM4 tidak valid (contoh: 32.01.02.2002)');
+      return;
+    }
+    setWeatherSaving(true);
+    try {
+      const keywords = nowcastKeywords
+        .split(/[,;]+/)
+        .map((k) => k.trim().toLowerCase())
+        .filter(Boolean);
+      const res = await fetch(`${API_BASE}/api/device/${device.id}/weather`, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          deployment_slug: device.deploymentSlug,
+          bmkg_adm4: trimmedAdm4 || null,
+          bmkg_nowcast_keywords: keywords,
+        }),
+      });
+      if (!res.ok) {
+        const body = (await res.json()) as { error?: string };
+        throw new Error(body.error ?? 'Gagal menyimpan pengaturan cuaca');
+      }
+      await refreshDashboard();
+      toast.success('Pengaturan cuaca BMKG disimpan');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(msg);
+    } finally {
+      setWeatherSaving(false);
     }
   };
 
@@ -311,6 +359,53 @@ export default function DeviceSettings() {
             <Button type="submit" disabled={settingsSaving} className="gap-2">
               <Save className="h-4 w-4" />
               {settingsSaving ? 'Menyimpan...' : 'Simpan data perangkat'}
+            </Button>
+          </form>
+        </Card>
+
+        <Card className="border-border bg-card p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <CloudRain className="h-4 w-4 text-sky-600" />
+            <h3 className="font-semibold text-foreground">Prakiraan cuaca BMKG</h3>
+          </div>
+          <p className="mb-4 text-xs leading-relaxed text-muted-foreground">
+            Kode wilayah desa (ADM4) untuk prakiraan cuaca titik pantau ini. Cari kode di{' '}
+            <a
+              href="https://data.bmkg.go.id"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline"
+            >
+              data.bmkg.go.id
+            </a>
+            .
+          </p>
+          <form onSubmit={handleWeatherSave} className="space-y-4">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Kode ADM4 BMKG</label>
+              <Input
+                value={bmkgAdm4}
+                onChange={(e) => setBmkgAdm4(e.target.value)}
+                placeholder="32.01.02.2002"
+                className="font-mono text-xs"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                Kata kunci nowcast (pisahkan koma)
+              </label>
+              <Input
+                value={nowcastKeywords}
+                onChange={(e) => setNowcastKeywords(e.target.value)}
+                placeholder="bojongkulur, gunung putri, bogor"
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Filter peringatan dini BMKG yang relevan untuk lokasi ini.
+              </p>
+            </div>
+            <Button type="submit" disabled={weatherSaving} className="gap-2">
+              <Save className="h-4 w-4" />
+              {weatherSaving ? 'Menyimpan...' : 'Simpan pengaturan cuaca'}
             </Button>
           </form>
         </Card>

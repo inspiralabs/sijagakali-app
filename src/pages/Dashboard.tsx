@@ -5,9 +5,15 @@ import { AlertLog } from '@/components/AlertLog';
 import { AppLayout } from '@/components/AppLayout';
 import { CctvPanel } from '@/components/CctvPanel';
 import { useLiveData } from '@/lib/liveDataContext';
+import { findWeatherItem } from '@/components/WeatherDeviceInline';
+import { useWeatherBatch } from '@/lib/sijagaair/useWeatherData';
+import { getDefaultDeploymentSlug } from '@/lib/sijagaairEnv';
 
 export default function Dashboard() {
   const { devices, alerts, histories } = useLiveData();
+  const deploymentSlug = getDefaultDeploymentSlug();
+  const weatherBatch = useWeatherBatch(deploymentSlug);
+  const weatherItems = weatherBatch.data?.items ?? [];
 
   return (
     <AppLayout>
@@ -17,18 +23,34 @@ export default function Dashboard() {
         <section className="flex flex-col gap-4">
           <div className="flex flex-col gap-1 border-b border-border/70 pb-3 sm:flex-row sm:items-end sm:justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Ringkasan titik pantau
+              Titik pantau
             </h2>
             <span className="text-xs tabular-nums text-muted-foreground">{devices.length} perangkat</span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {devices.map((d) => (
-              <DeviceCard key={d.id} device={d} embedCctv={false} />
+              <DeviceCard
+                key={d.id}
+                device={d}
+                embedCctv={false}
+                weatherItem={findWeatherItem(weatherItems, d.id)}
+                weatherLoading={weatherBatch.isLoading}
+                weatherError={weatherBatch.error}
+                showAdminWeatherHints
+              />
             ))}
           </div>
         </section>
 
-        <CctvPanel devices={devices} showAdminLinks emphasis />
+        <CctvPanel
+          devices={devices}
+          showAdminLinks
+          emphasis
+          weatherItems={weatherItems}
+          weatherLoading={weatherBatch.isLoading}
+          weatherError={weatherBatch.error}
+          histories={histories}
+        />
 
         <section
           className="rounded-2xl border border-border/70 bg-card/30 p-4 shadow-sm ring-1 ring-black/[0.03] dark:bg-card/20 dark:ring-white/[0.05] sm:p-5"

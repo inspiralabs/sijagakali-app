@@ -5,7 +5,10 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Camera, VideoOff, Video, Settings, RefreshCw, Maximize2, Minimize2 } from 'lucide-react';
-import { Device } from '@/lib/types';
+import { Device, WaterReading } from '@/lib/types';
+import type { WeatherBatchItem } from '@/lib/sijagaair/fetchWeather';
+import { findWeatherItem, WeatherDeviceInline } from '@/components/WeatherDeviceInline';
+import { WaterChart } from '@/components/WaterChart';
 import { StatusBadge } from './StatusBadge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,9 +26,22 @@ interface CctvTileProps {
   device: Device;
   showAdminLink?: boolean;
   emphasis?: boolean;
+  weatherItems?: WeatherBatchItem[];
+  weatherLoading?: boolean;
+  weatherError?: Error | null;
+  histories?: Record<string, WaterReading[]>;
 }
 
-function CctvTile({ device, showAdminLink, emphasis }: CctvTileProps) {
+function CctvTile({
+  device,
+  showAdminLink,
+  emphasis,
+  weatherItems = [],
+  weatherLoading,
+  weatherError,
+  histories,
+}: CctvTileProps) {
+  const weatherItem = findWeatherItem(weatherItems, device.id);
   const [tab, setTab] = useState<'snapshot' | 'live'>('snapshot');
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerTab, setViewerTab] = useState<'snapshot' | 'live'>('snapshot');
@@ -329,41 +345,20 @@ function CctvTile({ device, showAdminLink, emphasis }: CctvTileProps) {
       <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
         <DialogContent
           className={cn(
-            'flex h-[min(92vh,920px)] max-h-[92vh] w-[min(96vw,1280px)] max-w-[96vw] flex-col gap-0 overflow-hidden border-0 p-0 sm:rounded-xl',
+            'flex max-h-[96vh] w-[min(96vw,1280px)] max-w-[96vw] flex-col gap-0 overflow-hidden border-0 p-0 sm:rounded-xl',
             '[&>button]:right-3 [&>button]:top-3 [&>button]:z-[60]'
           )}
         >
           <DialogDescription className="sr-only">
             Tampilan besar CCTV {viewerTab === 'snapshot' ? 'snapshot' : 'live'} untuk {device.name}.
           </DialogDescription>
-          <DialogHeader className="shrink-0 space-y-0 border-b border-border bg-card px-4 py-3 pr-14 sm:px-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <DialogTitle className="text-left text-base font-semibold leading-snug sm:text-lg">
-                {device.name}
-                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                  {viewerTab === 'snapshot' ? 'Snapshot CCTV' : 'Live stream'}
-                </span>
-              </DialogTitle>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="shrink-0 gap-2 self-start sm:self-auto"
-                onClick={toggleBrowserFullscreen}
-              >
-                {fsActive ? (
-                  <>
-                    <Minimize2 className="h-4 w-4" />
-                    Keluar layar penuh
-                  </>
-                ) : (
-                  <>
-                    <Maximize2 className="h-4 w-4" />
-                    Layar penuh
-                  </>
-                )}
-              </Button>
-            </div>
+          <DialogHeader className="shrink-0 space-y-0 border-b border-border bg-card px-4 py-3 pr-12 sm:px-5 sm:pr-14">
+            <DialogTitle className="text-left text-base font-semibold leading-snug sm:text-lg">
+              {device.name}
+              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                {viewerTab === 'snapshot' ? 'Snapshot CCTV' : 'Live stream'}
+              </span>
+            </DialogTitle>
             <div className="mt-3 flex gap-1">
               <button
                 type="button"
@@ -394,11 +389,61 @@ function CctvTile({ device, showAdminLink, emphasis }: CctvTileProps) {
             </div>
           </DialogHeader>
 
-          <div
-            ref={fullscreenTargetRef}
-            className="relative min-h-[min(58vh,520px)] w-full flex-1 bg-black"
-          >
-            {viewerTab === 'snapshot' ? renderSnapshotBody(true) : renderLiveBody(true)}
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <div
+              ref={fullscreenTargetRef}
+              className="relative min-h-[min(42vh,420px)] w-full shrink-0 bg-black lg:min-h-[min(48vh,480px)]"
+            >
+              {viewerTab === 'snapshot' ? renderSnapshotBody(true) : renderLiveBody(true)}
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="absolute bottom-3 left-3 z-10 gap-1.5 bg-background/90 text-xs shadow-md backdrop-blur-sm hover:bg-background"
+                onClick={toggleBrowserFullscreen}
+              >
+                {fsActive ? (
+                  <>
+                    <Minimize2 className="h-3.5 w-3.5" />
+                    Keluar layar penuh
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="h-3.5 w-3.5" />
+                    Layar penuh
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <div className="shrink-0 border-t border-border bg-muted/30 p-4 sm:p-5">
+              <div className="grid gap-4 lg:grid-cols-2 lg:gap-5">
+                <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+                  <WeatherDeviceInline
+                    item={weatherItem}
+                    isLoading={weatherLoading}
+                    error={weatherError}
+                    variant="expanded"
+                  />
+                </div>
+                <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+                  <h4 className="mb-3 text-sm font-semibold text-foreground">Tren level air</h4>
+                  {viewerOpen && (
+                    <WaterChart
+                      key={`${device.id}-chart`}
+                      devices={[device]}
+                      histories={histories}
+                      fixedDeviceId={device.id}
+                      hideSelector
+                      hideHeader
+                      hideLegend
+                      chartHeight={240}
+                      className="border-0 bg-transparent shadow-none"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -413,6 +458,10 @@ interface CctvPanelProps {
   /** Ukuran section & tile lebih besar, header lebih tegas (dashboard utama). */
   emphasis?: boolean;
   className?: string;
+  weatherItems?: WeatherBatchItem[];
+  weatherLoading?: boolean;
+  weatherError?: Error | null;
+  histories?: Record<string, WaterReading[]>;
 }
 
 export function CctvPanel({
@@ -420,6 +469,10 @@ export function CctvPanel({
   showAdminLinks = false,
   emphasis = false,
   className = '',
+  weatherItems = [],
+  weatherLoading,
+  weatherError,
+  histories,
 }: CctvPanelProps) {
   if (!devices.length) return null;
 
@@ -482,6 +535,10 @@ export function CctvPanel({
               device={d}
               showAdminLink={showAdminLinks}
               emphasis={emphasis}
+              weatherItems={weatherItems}
+              weatherLoading={weatherLoading}
+              weatherError={weatherError}
+              histories={histories}
             />
           ))}
         </div>

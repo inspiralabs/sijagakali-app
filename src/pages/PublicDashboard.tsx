@@ -15,6 +15,9 @@ import { useTheme } from '@/lib/themeContext';
 import { useSiren } from '@/lib/sirenContext';
 import { formatWIB } from '@/lib/utils';
 import { getPublicMonitoringGridClass } from '@/lib/publicMonitoringLayout';
+import { findWeatherItem } from '@/components/WeatherDeviceInline';
+import { useWeatherBatch } from '@/lib/sijagaair/useWeatherData';
+import { getDefaultDeploymentSlug } from '@/lib/sijagaairEnv';
 
 export default function PublicDashboard() {
   const { devices, alerts, histories, lastUpdated, supabaseError } = useLiveData();
@@ -22,6 +25,9 @@ export default function PublicDashboard() {
   const { enabled, muted, setMuted } = useSiren();
 
   const gridClass = useMemo(() => getPublicMonitoringGridClass(devices.length), [devices.length]);
+  const deploymentSlug = getDefaultDeploymentSlug();
+  const weatherBatch = useWeatherBatch(deploymentSlug);
+  const weatherItems = weatherBatch.data?.items ?? [];
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -162,7 +168,15 @@ export default function PublicDashboard() {
                     className="min-h-0 animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-forwards"
                     style={{ animationDelay: `${Math.min(i, 10) * 70}ms` }}
                   >
-                    <DeviceCard device={d} publicView embedCctv={false} className="h-full" />
+                    <DeviceCard
+                      device={d}
+                      publicView
+                      embedCctv={false}
+                      className="h-full"
+                      weatherItem={findWeatherItem(weatherItems, d.id)}
+                      weatherLoading={weatherBatch.isLoading}
+                      weatherError={weatherBatch.error}
+                    />
                   </div>
                 ))}
               </div>
@@ -170,7 +184,15 @@ export default function PublicDashboard() {
           </div>
         </section>
 
-        <CctvPanel devices={devices} showAdminLinks={false} emphasis />
+        <CctvPanel
+          devices={devices}
+          showAdminLinks={false}
+          emphasis
+          weatherItems={weatherItems}
+          weatherLoading={weatherBatch.isLoading}
+          weatherError={weatherBatch.error}
+          histories={histories}
+        />
 
         <section
           className="relative overflow-hidden rounded-2xl border border-border/70 bg-card/50 p-4 shadow-sm ring-1 ring-black/[0.03] dark:bg-card/40 dark:ring-white/[0.06] sm:p-5"

@@ -41,6 +41,10 @@ export interface Device {
   cctvCapturedAt?: string | null;
   /** Signed URL terakhir yang di-resolve dari path; di-cache di client. */
   cctvSignedUrl?: string | null;
+  /** Kode wilayah desa BMKG (ADM4) untuk prakiraan cuaca. */
+  bmkgAdm4?: string | null;
+  /** Kata kunci filter nowcast BMKG. */
+  bmkgNowcastKeywords?: string[];
 }
 
 export interface WaterReading {

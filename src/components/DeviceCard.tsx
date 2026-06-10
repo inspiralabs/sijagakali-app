@@ -7,6 +7,8 @@ import { Card } from '@/components/ui/card';
 import { Battery, Signal, Thermometer, Camera, Video, VideoOff, Settings } from 'lucide-react';
 import { getSignedUrl } from '@/lib/sijagaair/signedUrlCache';
 import { formatWIB, cn } from '@/lib/utils';
+import { WeatherDeviceInline } from '@/components/WeatherDeviceInline';
+import type { WeatherBatchItem } from '@/lib/sijagaair/fetchWeather';
 
 interface DeviceCardProps {
   device: Device;
@@ -14,6 +16,11 @@ interface DeviceCardProps {
   publicView?: boolean;
   /** Jika false, blok snapshot/live CCTV disembunyikan (mis. admin punya section Pantau CCTV terpisah). */
   embedCctv?: boolean;
+  /** Data cuaca BMKG untuk titik ini. */
+  weatherItem?: WeatherBatchItem | null;
+  weatherLoading?: boolean;
+  weatherError?: Error | null;
+  showAdminWeatherHints?: boolean;
   className?: string;
 }
 
@@ -135,7 +142,16 @@ function CctvLiveStream({ device, publicView }: { device: Device; publicView?: b
   );
 }
 
-export function DeviceCard({ device, publicView = false, embedCctv = true, className }: DeviceCardProps) {
+export function DeviceCard({
+  device,
+  publicView = false,
+  embedCctv = true,
+  weatherItem,
+  weatherLoading,
+  weatherError,
+  showAdminWeatherHints = false,
+  className,
+}: DeviceCardProps) {
   const config = STATUS_CONFIG[device.status];
   const levelPct = Math.min((device.waterLevel / device.maxCapacity) * 100, 100);
   const waveHeight = Math.max(10, levelPct * 0.6);
@@ -196,6 +212,18 @@ export function DeviceCard({ device, publicView = false, embedCctv = true, class
           />
         </div>
       </div>
+
+      {import.meta.env.VITE_SIJAGAAIRAPI_URL && (
+        <div className="shrink-0 border-t border-border/80 px-3 py-2.5 sm:px-4">
+          <WeatherDeviceInline
+            item={weatherItem}
+            isLoading={weatherLoading}
+            error={weatherError}
+            variant="compact"
+            showAdminHints={showAdminWeatherHints}
+          />
+        </div>
+      )}
 
       {/* Thresholds */}
       <div className="grid shrink-0 grid-cols-3 gap-2 border-t border-border/80 px-3 py-2.5 text-center text-[10px] text-muted-foreground sm:px-4">
