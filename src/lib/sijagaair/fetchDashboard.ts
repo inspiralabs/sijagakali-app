@@ -8,7 +8,7 @@ const DEVICE_CONFIGS_SELECT_BASE =
 const DEVICE_CONFIGS_SELECT_WITH_GEO_MAC =
   `${DEVICE_CONFIGS_SELECT_BASE}, mac_address, latitude, longitude`;
 const DEVICE_CONFIGS_SELECT_FULL =
-  `${DEVICE_CONFIGS_SELECT_BASE}, mac_address, latitude, longitude, display_name, bmkg_adm4, bmkg_nowcast_keywords`;
+  `${DEVICE_CONFIGS_SELECT_BASE}, mac_address, latitude, longitude, display_name, bmkg_adm4`;
 
 /** Koordinat peta per `device_id` (DB belum menyimpan lat/lng). */
 const NODE_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -34,7 +34,6 @@ type DeviceConfigRow = {
   longitude?: number | null;
   display_name?: string | null;
   bmkg_adm4?: string | null;
-  bmkg_nowcast_keywords?: string[] | null;
 };
 
 type SensorReadingLite = {
@@ -123,7 +122,6 @@ function mapRowToDevice(
     cctvCapturedAt: latest?.cctv_captured_at ?? null,
     cctvSignedUrl: null,
     bmkgAdm4: c.bmkg_adm4 ?? null,
-    bmkgNowcastKeywords: Array.isArray(c.bmkg_nowcast_keywords) ? c.bmkg_nowcast_keywords : [],
   };
 }
 

@@ -40,7 +40,6 @@ export default function DeviceSettings() {
   const [settingsSaving, setSettingsSaving] = useState(false);
 
   const [bmkgAdm4, setBmkgAdm4] = useState('');
-  const [nowcastKeywords, setNowcastKeywords] = useState('');
   const [weatherSaving, setWeatherSaving] = useState(false);
 
   useEffect(() => {
@@ -58,7 +57,6 @@ export default function DeviceSettings() {
     setTSiaga(String(device.threshold.siaga));
     setTBahaya(String(device.threshold.awas));
     setBmkgAdm4(device.bmkgAdm4 ?? '');
-    setNowcastKeywords((device.bmkgNowcastKeywords ?? []).join(', '));
   }, [device?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!device) {
@@ -179,17 +177,12 @@ export default function DeviceSettings() {
     }
     setWeatherSaving(true);
     try {
-      const keywords = nowcastKeywords
-        .split(/[,;]+/)
-        .map((k) => k.trim().toLowerCase())
-        .filter(Boolean);
       const res = await fetch(`${API_BASE}/api/device/${device.id}/weather`, {
         method: 'PATCH',
         headers: authHeaders(),
         body: JSON.stringify({
           deployment_slug: device.deploymentSlug,
           bmkg_adm4: trimmedAdm4 || null,
-          bmkg_nowcast_keywords: keywords,
         }),
       });
       if (!res.ok) {
@@ -389,19 +382,6 @@ export default function DeviceSettings() {
                 placeholder="32.01.02.2002"
                 className="font-mono text-xs"
               />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Kata kunci nowcast (pisahkan koma)
-              </label>
-              <Input
-                value={nowcastKeywords}
-                onChange={(e) => setNowcastKeywords(e.target.value)}
-                placeholder="bojongkulur, gunung putri, bogor"
-              />
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Filter peringatan dini BMKG yang relevan untuk lokasi ini.
-              </p>
             </div>
             <Button type="submit" disabled={weatherSaving} className="gap-2">
               <Save className="h-4 w-4" />

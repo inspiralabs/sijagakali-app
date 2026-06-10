@@ -57,21 +57,6 @@ export interface WeatherBatchResponse {
   fetched_at: string;
 }
 
-export interface NowcastAlert {
-  title: string;
-  description: string;
-}
-
-export interface NowcastResponse {
-  deployment_slug: string;
-  alerts: NowcastAlert[];
-  total_active: number;
-  other_regions_count: number;
-  keywords_used: string[];
-  attribution: string;
-  fetched_at: string;
-}
-
 export async function fetchWeatherBatch(deploymentSlug: string): Promise<WeatherBatchResponse> {
   const url = `${API_BASE}/api/weather/forecast/batch?deployment_slug=${encodeURIComponent(deploymentSlug)}`;
   const res = await fetch(url);
@@ -80,16 +65,6 @@ export async function fetchWeatherBatch(deploymentSlug: string): Promise<Weather
     throw new Error(body.error ?? `Gagal memuat cuaca (${res.status})`);
   }
   return res.json() as Promise<WeatherBatchResponse>;
-}
-
-export async function fetchWeatherNowcast(deploymentSlug: string): Promise<NowcastResponse> {
-  const url = `${API_BASE}/api/weather/nowcast?deployment_slug=${encodeURIComponent(deploymentSlug)}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body.error ?? `Gagal memuat nowcast (${res.status})`);
-  }
-  return res.json() as Promise<NowcastResponse>;
 }
 
 export const WEATHER_ICONS: Record<number, string> = {
