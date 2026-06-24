@@ -73,7 +73,7 @@ export function WeatherDeviceInline({
       >
         <div className="flex items-center gap-2">
           <span className="text-lg" aria-hidden>
-            {weatherEmoji(current.weatherCode)}
+            {weatherEmoji(current.weatherCode, current.updatedAt)}
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-foreground">
@@ -102,7 +102,9 @@ export function WeatherDeviceInline({
       {current ? (
         <div className="flex flex-col gap-3 rounded-lg border border-border/60 bg-muted/20 p-4 sm:flex-row sm:items-center">
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <span className="text-3xl sm:text-4xl">{weatherEmoji(current.weatherCode)}</span>
+            <span className="text-3xl sm:text-4xl">
+              {weatherEmoji(current.weatherCode, current.updatedAt)}
+            </span>
             <div className="min-w-0 flex-1">
               <p className="text-2xl font-bold tabular-nums sm:text-3xl">
                 {current.temperatureC ?? '—'}°C
@@ -144,7 +146,9 @@ export function WeatherDeviceInline({
                     <span className="text-xs tabular-nums text-muted-foreground">
                       {formatWeatherTime(h.localDatetime)}
                     </span>
-                    <span className="text-lg sm:text-xl">{weatherEmoji(h.weatherCode)}</span>
+                    <span className="text-lg sm:text-xl">
+                      {weatherEmoji(h.weatherCode, h.localDatetime)}
+                    </span>
                     <span className="text-sm font-semibold tabular-nums">{h.temperatureC ?? '—'}°</span>
                   </div>
                 ))}

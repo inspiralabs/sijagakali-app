@@ -85,8 +85,42 @@ export const WEATHER_ICONS: Record<number, string> = {
   97: '⛈️',
 };
 
-export function weatherEmoji(code: number | null | undefined): string {
+/** Ikon langit cerah/berawan saat malam (18:00–05:59 WIB) */
+const NIGHT_SKY_ICONS: Partial<Record<number, string>> = {
+  0: '🌙',
+  1: '🌙',
+  2: '☁️',
+  3: '☁️',
+  4: '☁️',
+};
+
+const WIB_TZ = 'Asia/Jakarta';
+
+function parseWeatherDatetime(dtStr: string): Date | null {
+  if (!dtStr) return null;
+  const normalized = dtStr.replace(' ', 'T');
+  const d = new Date(`${normalized}${normalized.includes('+') ? '' : '+07:00'}`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Malam: 18:00–05:59 WIB */
+export function isNightTimeWib(localDatetime: string): boolean {
+  const d = parseWeatherDatetime(localDatetime);
+  if (!d) return false;
+  const hour = Number(
+    d.toLocaleString('en-US', { timeZone: WIB_TZ, hour: 'numeric', hour12: false })
+  );
+  return hour >= 18 || hour < 6;
+}
+
+export function weatherEmoji(
+  code: number | null | undefined,
+  localDatetime?: string
+): string {
   if (code == null) return '🌡️';
+  if (localDatetime && isNightTimeWib(localDatetime) && NIGHT_SKY_ICONS[code]) {
+    return NIGHT_SKY_ICONS[code]!;
+  }
   return WEATHER_ICONS[code] ?? '🌡️';
 }
 
