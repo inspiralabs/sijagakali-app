@@ -1,8 +1,8 @@
 /**
- * Grid kartu titik pantau di dashboard publik.
+ * Grid kartu titik pantau (dashboard publik & admin).
  * `auto-fit` + `minmax` supaya jumlah kolom mengikuti lebar viewport dan jumlah perangkat (1–N) tetap rapi dan setinggi.
  */
-export function getPublicMonitoringGridClass(deviceCount: number): string {
+export function getMonitoringGridClass(deviceCount: number): string {
   const gap = 'gap-4 sm:gap-5';
   const align = 'items-stretch';
   if (deviceCount <= 0) {
