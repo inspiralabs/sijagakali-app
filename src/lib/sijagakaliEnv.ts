@@ -1,4 +1,4 @@
-/** True jika frontend boleh memakai Supabase (schema `sijagaair`). */
+/** True jika frontend boleh memakai Supabase (schema `sijagakali`). */
 export function isSupabaseConfigured(): boolean {
   const url = import.meta.env.VITE_SUPABASE_URL;
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -12,5 +12,5 @@ export function isSupabaseConfigured(): boolean {
 }
 
 export function getDefaultDeploymentSlug(): string {
-  return import.meta.env.VITE_DEFAULT_DEPLOYMENT_SLUG || 'sijagaair-bojong-kulur';
+  return import.meta.env.VITE_DEFAULT_DEPLOYMENT_SLUG || 'sijagakali-bojong-kulur';
 }

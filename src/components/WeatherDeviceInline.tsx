@@ -1,6 +1,6 @@
 import { Droplets, Eye, Wind } from 'lucide-react';
-import type { WeatherBatchItem } from '@/lib/sijagaair/fetchWeather';
-import { formatWeatherTime, weatherEmoji } from '@/lib/sijagaair/fetchWeather';
+import type { WeatherBatchItem } from '@/lib/sijagakali/fetchWeather';
+import { formatWeatherTime, weatherEmoji } from '@/lib/sijagakali/fetchWeather';
 import { cn } from '@/lib/utils';
 
 interface WeatherDeviceInlineProps {
@@ -21,7 +21,7 @@ export function WeatherDeviceInline({
   showAdminHints = false,
   className,
 }: WeatherDeviceInlineProps) {
-  if (!import.meta.env.VITE_SIJAGAAIRAPI_URL) return null;
+  if (!import.meta.env.VITE_SIJAGAKALIAPI_URL) return null;
 
   if (isLoading) {
     return (

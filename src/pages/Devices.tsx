@@ -3,7 +3,7 @@ import { mockDevices } from '@/lib/mockData';
 import { Device } from '@/lib/types';
 import { useLiveData } from '@/lib/liveDataContext';
 import { useAuth } from '@/lib/authContext';
-import { isSupabaseConfigured, getDefaultDeploymentSlug } from '@/lib/sijagaairEnv';
+import { isSupabaseConfigured, getDefaultDeploymentSlug } from '@/lib/sijagakaliEnv';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatWIB } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ import { Plus, Trash2, Settings2, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppLayout } from '@/components/AppLayout';
 
-const API_BASE = import.meta.env.VITE_SIJAGAAIRAPI_URL ?? '';
+const API_BASE = import.meta.env.VITE_SIJAGAKALIAPI_URL ?? '';
 
 const DEVICE_ID_RE = /^[a-zA-Z0-9._-]{1,120}$/;
 

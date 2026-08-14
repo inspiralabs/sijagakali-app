@@ -90,7 +90,7 @@ export default function ForgotPassword() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@sijagaair.com"
+                    placeholder="admin@sijagakali.com"
                     required
                     autoComplete="email"
                   />

@@ -3,9 +3,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import { useLiveData } from '@/lib/liveDataContext';
 import { useAuth } from '@/lib/authContext';
-import { isSupabaseConfigured, getDefaultDeploymentSlug } from '@/lib/sijagaairEnv';
+import { isSupabaseConfigured, getDefaultDeploymentSlug } from '@/lib/sijagakaliEnv';
 import { getSupabase } from '@/lib/supabase';
-import { fetchDeviceNotificationLogs, type DeviceNotificationLogRow } from '@/lib/sijagaair/fetchDashboard';
+import { fetchDeviceNotificationLogs, type DeviceNotificationLogRow } from '@/lib/sijagakali/fetchDashboard';
 import {
   PLACEHOLDERS,
   STATUS_OPTIONS,
@@ -16,7 +16,7 @@ import {
   WA_DEFAULT_WASPADA,
   resolveWaTemplatesFromDeployment,
   type TemplateField,
-} from '@/lib/sijagaair/waTemplatesConstants';
+} from '@/lib/sijagakali/waTemplatesConstants';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -38,7 +38,7 @@ import {
 import { toast } from 'sonner';
 import { formatWIB } from '@/lib/utils';
 
-const API_BASE = import.meta.env.VITE_SIJAGAAIRAPI_URL ?? '';
+const API_BASE = import.meta.env.VITE_SIJAGAKALIAPI_URL ?? '';
 
 const TEMPLATE_STATUS_OPTIONS: { value: TemplateField; label: string }[] = [
   { value: 'normal', label: 'Normal' },

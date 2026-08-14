@@ -36,7 +36,7 @@ export function TopBar({ lastUpdated, onLogout, showSidebarTrigger }: TopBarProp
             alt=""
           />
           <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg lg:hidden">
-            SiJagaAir
+            SiJagaKali
           </h1>
         </div>
         <span className="text-xs text-muted-foreground hidden sm:inline">Early Warning System</span>

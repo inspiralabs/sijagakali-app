@@ -5,10 +5,10 @@ import { Device, STATUS_CONFIG } from '@/lib/types';
 import { StatusBadge } from './StatusBadge';
 import { Card } from '@/components/ui/card';
 import { Battery, Signal, Thermometer, Camera, Video, VideoOff, Settings } from 'lucide-react';
-import { getSignedUrl } from '@/lib/sijagaair/signedUrlCache';
+import { getSignedUrl } from '@/lib/sijagakali/signedUrlCache';
 import { formatWIB, cn } from '@/lib/utils';
 import { WeatherDeviceInline } from '@/components/WeatherDeviceInline';
-import type { WeatherBatchItem } from '@/lib/sijagaair/fetchWeather';
+import type { WeatherBatchItem } from '@/lib/sijagakali/fetchWeather';
 
 interface DeviceCardProps {
   device: Device;
@@ -213,7 +213,7 @@ export function DeviceCard({
         </div>
       </div>
 
-      {import.meta.env.VITE_SIJAGAAIRAPI_URL && (
+      {import.meta.env.VITE_SIJAGAKALIAPI_URL && (
         <div className="shrink-0 border-t border-border/80 px-3 py-2.5 sm:px-4">
           <WeatherDeviceInline
             item={weatherItem}

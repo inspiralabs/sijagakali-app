@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_SIJAGAAIRAPI_URL ?? '';
+const API_BASE = import.meta.env.VITE_SIJAGAKALIAPI_URL ?? '';
 
 export interface WeatherForecastHour {
   localDatetime: string;

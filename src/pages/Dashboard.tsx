@@ -6,8 +6,8 @@ import { AppLayout } from '@/components/AppLayout';
 import { CctvPanel } from '@/components/CctvPanel';
 import { useLiveData } from '@/lib/liveDataContext';
 import { findWeatherItem } from '@/components/WeatherDeviceInline';
-import { useWeatherBatch } from '@/lib/sijagaair/useWeatherData';
-import { getDefaultDeploymentSlug } from '@/lib/sijagaairEnv';
+import { useWeatherBatch } from '@/lib/sijagakali/useWeatherData';
+import { getDefaultDeploymentSlug } from '@/lib/sijagakaliEnv';
 
 export default function Dashboard() {
   const { devices, alerts, histories } = useLiveData();

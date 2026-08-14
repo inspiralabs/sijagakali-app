@@ -1,9 +1,9 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { isSupabaseConfigured } from './sijagaairEnv';
+import { isSupabaseConfigured } from './sijagakaliEnv';
 
 let client: SupabaseClient | null = null;
 
-/** Client PostgREST schema `sijagaair`; null jika env belum diisi. */
+/** Client PostgREST schema `sijagakali`; null jika env belum diisi. */
 export function getSupabase(): SupabaseClient | null {
   if (!isSupabaseConfigured()) return null;
   if (!client) {
@@ -11,7 +11,7 @@ export function getSupabase(): SupabaseClient | null {
       import.meta.env.VITE_SUPABASE_URL,
       import.meta.env.VITE_SUPABASE_ANON_KEY,
       {
-        db: { schema: 'sijagaair' },
+        db: { schema: 'sijagakali' },
         auth: { persistSession: true, autoRefreshToken: true },
       }
     );

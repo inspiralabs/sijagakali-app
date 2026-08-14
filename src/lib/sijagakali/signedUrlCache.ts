@@ -1,10 +1,10 @@
 /**
  * Cache signed URL untuk gambar CCTV.
- * Memanggil GET /api/cctv/signed-url di sijagaair-api (Fastify).
+ * Memanggil GET /api/cctv/signed-url di sijagakali-api (Fastify).
  * Service role TIDAK diekspos ke browser; semua lewat endpoint ini.
  */
 
-const API_BASE = (import.meta.env.VITE_SIJAGAAIRAPI_URL ?? '').replace(/\/$/, '');
+const API_BASE = (import.meta.env.VITE_SIJAGAKALIAPI_URL ?? '').replace(/\/$/, '');
 
 interface CachedUrl {
   url: string;

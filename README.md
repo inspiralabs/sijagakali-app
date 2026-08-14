@@ -1,8 +1,8 @@
-# SiJagaAir — Aplikasi web (dashboard)
+# SiJagaKali — Aplikasi web (dashboard)
 
-Aplikasi **React + Vite + TypeScript** untuk pemantauan ketinggian air (EWS), manajemen perangkat, dan konfigurasi notifikasi. Berpasangan dengan backend monorepo `sijagaair-api` dan database Supabase (`schema sijagaair`).
+Aplikasi **React + Vite + TypeScript** untuk pemantauan ketinggian air (EWS), manajemen perangkat, dan konfigurasi notifikasi. Berpasangan dengan backend monorepo `sijagakali-api` dan database Supabase (`schema sijagakali`).
 
-Dokumen fitur & contoh kasus (stakeholder + arsitektur): [`../plans/SiJagaAir-Fitur-dan-Contoh-Kasus.md`](../plans/SiJagaAir-Fitur-dan-Contoh-Kasus.md).
+Dokumen fitur & contoh kasus (stakeholder + arsitektur): [`../plans/SiJagaKali-Fitur-dan-Contoh-Kasus.md`](../plans/SiJagaKali-Fitur-dan-Contoh-Kasus.md).
 
 ---
 
@@ -75,8 +75,8 @@ Dokumen fitur & contoh kasus (stakeholder + arsitektur): [`../plans/SiJagaAir-Fi
 |----------|--------|
 | `VITE_SUPABASE_URL` | URL proyek Supabase |
 | `VITE_SUPABASE_ANON_KEY` | Kunci anon (client) |
-| `VITE_SIJAGAAIR_DEPLOYMENT_SLUG` | Slug wilayah pemasangan default |
-| `VITE_SIJAGAAIRAPI_URL` | Base URL API Fastify (interval, device settings, admin, notifikasi uji) |
+| `VITE_SIJAGAKALI_DEPLOYMENT_SLUG` | Slug wilayah pemasangan default |
+| `VITE_SIJAGAKALIAPI_URL` | Base URL API Fastify (interval, device settings, admin, notifikasi uji) |
 
 Tanpa Supabase yang valid, aplikasi dapat berjalan dengan **data mock** untuk UI.
 
@@ -110,7 +110,7 @@ Build produksi: `npm run build`.
 ### Jalankan build hasil produksi dengan PM2
 
 ```bash
-cd sijagaair-app
+cd sijagakali-app
 npm ci
 npm run build
 pm2 start ecosystem.config.cjs
@@ -121,5 +121,5 @@ pm2 save
 
 ## Repositori terkait
 
-- **API & worker**: `../sijagaair-api` (MQTT collector, data processing, notification gateway, REST API). **Build & deploy server:** lihat `../sijagaair-api/README.md` (perintah `npm run build:start`).
-- **Skema & seed**: `../sijagaair-api/supabase/`.
+- **API & worker**: `../sijagakali-api` (MQTT collector, data processing, notification gateway, REST API). **Build & deploy server:** lihat `../sijagakali-api/README.md` (perintah `npm run build:start`).
+- **Skema & seed**: `../sijagakali-api/supabase/`.

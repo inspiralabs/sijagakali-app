@@ -6,7 +6,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Camera, VideoOff, Video, Settings, RefreshCw, Maximize2, Minimize2 } from 'lucide-react';
 import { Device, WaterReading } from '@/lib/types';
-import type { WeatherBatchItem } from '@/lib/sijagaair/fetchWeather';
+import type { WeatherBatchItem } from '@/lib/sijagakali/fetchWeather';
 import { findWeatherItem, WeatherDeviceInline } from '@/components/WeatherDeviceInline';
 import { WaterChart } from '@/components/WaterChart';
 import { StatusBadge } from './StatusBadge';
@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { getSignedUrl } from '@/lib/sijagaair/signedUrlCache';
+import { getSignedUrl } from '@/lib/sijagakali/signedUrlCache';
 import { formatWIB, cn } from '@/lib/utils';
 
 interface CctvTileProps {

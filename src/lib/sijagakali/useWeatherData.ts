@@ -8,7 +8,7 @@ export function useWeatherBatch(deploymentSlug: string, enabled = true) {
     queryKey: ['weather-batch', deploymentSlug],
     queryFn: () => fetchWeatherBatch(deploymentSlug),
     staleTime: STALE_MS,
-    enabled: enabled && Boolean(deploymentSlug) && Boolean(import.meta.env.VITE_SIJAGAAIRAPI_URL),
+    enabled: enabled && Boolean(deploymentSlug) && Boolean(import.meta.env.VITE_SIJAGAKALIAPI_URL),
     retry: 1,
   });
 }

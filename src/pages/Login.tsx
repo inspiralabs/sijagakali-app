@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/lib/authContext';
 import { toast } from 'sonner';
-import { isSupabaseConfigured } from '@/lib/sijagaairEnv';
+import { isSupabaseConfigured } from '@/lib/sijagakaliEnv';
 import { TurnstileField, isTurnstileConfigured } from '@/components/TurnstileField';
 
 const LOGIN_FORM_ID = 'sja-login-form';
@@ -59,7 +59,7 @@ export default function Login() {
       <Card className="w-full max-w-sm border-border bg-card p-8">
         <div className="mb-6 flex flex-col items-center gap-2">
           <AppBrandLogo className="h-[clamp(2.5rem,8vw,3.5rem)] w-[clamp(2.5rem,8vw,3.5rem)]" />
-          <h1 className="text-2xl font-bold text-foreground">SiJagaAir</h1>
+          <h1 className="text-2xl font-bold text-foreground">SiJagaKali</h1>
           <p className="text-xs text-muted-foreground">Login Admin — Early Warning System</p>
         </div>
 
@@ -71,7 +71,7 @@ export default function Login() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@sijagaair.com"
+                placeholder="admin@sijagakali.com"
                 required
                 autoComplete="email"
               />

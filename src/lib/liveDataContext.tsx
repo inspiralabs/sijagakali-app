@@ -21,10 +21,10 @@ import {
 import { mockDevices, mockAlerts, generateWaterHistory, buildAlert } from './mockData';
 import { useAuth } from './authContext';
 import { useSiren } from './sirenContext';
-import { isSupabaseConfigured, getDefaultDeploymentSlug } from './sijagaairEnv';
+import { isSupabaseConfigured, getDefaultDeploymentSlug } from './sijagakaliEnv';
 import { getSupabase } from './supabase';
-import { fetchDashboardSnapshot, fetchAlertHistory } from './sijagaair/fetchDashboard';
-import { getSignedUrl } from './sijagaair/signedUrlCache';
+import { fetchDashboardSnapshot, fetchAlertHistory } from './sijagakali/fetchDashboard';
+import { getSignedUrl } from './sijagakali/signedUrlCache';
 
 export type LiveDataSource = 'mock' | 'supabase';
 
@@ -267,7 +267,7 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         const msg = e instanceof Error ? e.message : String(e);
         setSupabaseError(msg);
-        toast.error('Gagal memuat data SiJagaAir', { description: msg });
+        toast.error('Gagal memuat data SiJagaKali', { description: msg });
       });
 
     return () => {
@@ -287,7 +287,7 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
         'postgres_changes',
         {
           event: 'INSERT',
-          schema: 'sijagaair',
+          schema: 'sijagakali',
           table: 'sensor_readings',
           filter: `deployment_slug=eq.${deploymentSlug}`,
         },

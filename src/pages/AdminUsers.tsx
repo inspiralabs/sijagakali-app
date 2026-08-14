@@ -35,10 +35,10 @@ import {
 } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/authContext';
-import { isSupabaseConfigured } from '@/lib/sijagaairEnv';
+import { isSupabaseConfigured } from '@/lib/sijagakaliEnv';
 import { AppLayout } from '@/components/AppLayout';
 
-const API_BASE = import.meta.env.VITE_SIJAGAAIRAPI_URL ?? '';
+const API_BASE = import.meta.env.VITE_SIJAGAKALIAPI_URL ?? '';
 
 interface AdminUser {
   id: string;
@@ -204,7 +204,7 @@ export default function AdminUsers() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground sm:text-2xl">Manajemen Admin</h1>
-            <p className="text-sm text-muted-foreground">Kelola akun admin SiJagaAir</p>
+            <p className="text-sm text-muted-foreground">Kelola akun admin SiJagaKali</p>
           </div>
           <Button onClick={openAdd} className="w-full gap-2 sm:w-auto">
             <Plus className="h-4 w-4" />

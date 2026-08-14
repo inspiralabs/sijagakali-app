@@ -6,7 +6,7 @@ interface AppBrandLogoProps {
 }
 
 /** Logo aplikasi dari `/public/logo.png`; ukuran diatur lewat `className` (responsif). */
-export function AppBrandLogo({ className, alt = 'SiJagaAir' }: AppBrandLogoProps) {
+export function AppBrandLogo({ className, alt = 'SiJagaKali' }: AppBrandLogoProps) {
   return (
     <img
       src="/logo.png"

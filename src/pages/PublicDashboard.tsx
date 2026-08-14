@@ -16,8 +16,8 @@ import { useSiren } from '@/lib/sirenContext';
 import { formatWIB } from '@/lib/utils';
 import { getPublicMonitoringGridClass } from '@/lib/publicMonitoringLayout';
 import { findWeatherItem } from '@/components/WeatherDeviceInline';
-import { useWeatherBatch } from '@/lib/sijagaair/useWeatherData';
-import { getDefaultDeploymentSlug } from '@/lib/sijagaairEnv';
+import { useWeatherBatch } from '@/lib/sijagakali/useWeatherData';
+import { getDefaultDeploymentSlug } from '@/lib/sijagakaliEnv';
 
 export default function PublicDashboard() {
   const { devices, alerts, histories, lastUpdated, supabaseError } = useLiveData();
@@ -68,7 +68,7 @@ export default function PublicDashboard() {
               />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight text-foreground">SiJagaAir</h1>
+              <h1 className="text-lg font-bold tracking-tight text-foreground">SiJagaKali</h1>
               <p className="text-[13px] text-muted-foreground">Early Warning System - Desa Bojong Kulur</p>
             </div>
           </div>

@@ -2,7 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { AppLayout } from '@/components/AppLayout';
 import { useLiveData } from '@/lib/liveDataContext';
 import { useAuth } from '@/lib/authContext';
-import { isSupabaseConfigured } from '@/lib/sijagaairEnv';
+import { isSupabaseConfigured } from '@/lib/sijagakaliEnv';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,7 +13,7 @@ import { ArrowLeft, Video, Save, MessageSquare, ChevronRight, CloudRain } from '
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
-const API_BASE = import.meta.env.VITE_SIJAGAAIRAPI_URL ?? '';
+const API_BASE = import.meta.env.VITE_SIJAGAKALIAPI_URL ?? '';
 
 export default function DeviceSettings() {
   const { id } = useParams();

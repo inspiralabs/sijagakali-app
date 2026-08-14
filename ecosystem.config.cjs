@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "sijagaair-app",
+      name: "sijagakali-app",
       cwd: __dirname,
       script: "npm",
       args: "run preview -- --host 0.0.0.0 --port 4173",

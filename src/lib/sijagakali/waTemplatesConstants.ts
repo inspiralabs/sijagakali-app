@@ -8,7 +8,7 @@ export const STATUS_OPTIONS = [
 ] as const;
 
 export const WA_DEFAULT_NORMAL = `━━━━━━━━━━━━━━━━━━━━
-🌊 *SiJagaAir | Laporan Muka Air*
+🌊 *SiJagaKali | Laporan Muka Air*
 📍 Pos Pantau: *{nama_pos}*
 🏘️ Wilayah: *{wilayah}*
 ━━━━━━━━━━━━━━━━━━━━
@@ -26,10 +26,10 @@ Kondisi aman. Tidak ada ancaman banjir.
 
 📊 *Pantau live:* {dashboard_url}
 ━━━━━━━━━━━━━━━━━━━━
-_Pesan otomatis oleh SiJagaAir_`;
+_Pesan otomatis oleh SiJagaKali_`;
 
 export const WA_DEFAULT_WASPADA = `━━━━━━━━━━━━━━━━━━━━
-⚠️ *SiJagaAir | PERINGATAN DINI*
+⚠️ *SiJagaKali | PERINGATAN DINI*
 📍 Pos Pantau: *{nama_pos}*
 🏘️ Wilayah: *{wilayah}*
 ━━━━━━━━━━━━━━━━━━━━
@@ -48,11 +48,11 @@ dan waspada terhadap kemungkinan banjir.
 
 📞 Info lebih lanjut: {kontak_petugas}
 ━━━━━━━━━━━━━━━━━━━━
-_Pesan otomatis oleh SiJagaAir_`;
+_Pesan otomatis oleh SiJagaKali_`;
 
 export const WA_DEFAULT_SIAGA = `🚨🚨🚨 *PERINGATAN BAHAYA* 🚨🚨🚨
 ━━━━━━━━━━━━━━━━━━━━
-🌊 *SiJagaAir | SIAGA BANJIR*
+🌊 *SiJagaKali | SIAGA BANJIR*
 📍 Pos Pantau: *{nama_pos}*
 🏘️ Wilayah: *{wilayah}*
 ━━━━━━━━━━━━━━━━━━━━
@@ -74,11 +74,11 @@ bersiap untuk evakuasi.
 
 📊 *Pantau live:* {dashboard_url}
 ━━━━━━━━━━━━━━━━━━━━
-_Pesan otomatis oleh SiJagaAir_`;
+_Pesan otomatis oleh SiJagaKali_`;
 
 export const WA_DEFAULT_BAHAYA = `🚨🚨🚨 *PERINGATAN BAHAYA* 🚨🚨🚨
 ━━━━━━━━━━━━━━━━━━━━
-🌊 *SiJagaAir | BAHAYA BANJIR*
+🌊 *SiJagaKali | BAHAYA BANJIR*
 📍 Pos Pantau: *{nama_pos}*
 🏘️ Wilayah: *{wilayah}*
 ━━━━━━━━━━━━━━━━━━━━
@@ -100,7 +100,7 @@ bersiap untuk evakuasi.
 
 📊 *Pantau live:* {dashboard_url}
 ━━━━━━━━━━━━━━━━━━━━
-_Pesan otomatis oleh SiJagaAir_`;
+_Pesan otomatis oleh SiJagaKali_`;
 
 export const PLACEHOLDERS = [
   '{nama_pos}',

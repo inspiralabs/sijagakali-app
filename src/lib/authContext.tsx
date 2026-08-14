@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { getSupabase } from './supabase';
-import { isSupabaseConfigured } from './sijagaairEnv';
+import { isSupabaseConfigured } from './sijagakaliEnv';
 import { formatAuthError } from './authErrors';
 
 export type UserRole = 'admin' | 'public';
