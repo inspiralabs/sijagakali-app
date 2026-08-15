@@ -30,3 +30,6 @@ dist-ssr
 .rtk/
 CLAUDE.md
 skills-lock.json
+
+# Subagent-driven-development scratch workspace (ledgers, briefs, review packages)
+.superpowers/
