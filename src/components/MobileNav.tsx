@@ -1,10 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Server, Bell, FileText, Users } from 'lucide-react';
+import { LayoutDashboard, Server, Bell, FileText, Users, HeartHandshake } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/devices', label: 'Perangkat', icon: Server },
+  { to: '/banjir/warga', label: 'Warga', icon: HeartHandshake },
   { to: '/alerts', label: 'Alert', icon: Bell },
   { to: '/logs', label: 'Logs', icon: FileText },
   { to: '/admin/users', label: 'Admin', icon: Users },

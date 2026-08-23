@@ -18,6 +18,9 @@ import DeviceNotifications from "./pages/DeviceNotifications";
 import Alerts from "./pages/Alerts";
 import Logs from "./pages/Logs";
 import AdminUsers from "./pages/AdminUsers";
+import KejadianBanjir from "./pages/KejadianBanjir";
+import WargaTerdampak from "./pages/WargaTerdampak";
+import KelolaWilayah from "./pages/KelolaWilayah";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
@@ -51,6 +54,9 @@ const App = () => (
                   <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
                   <Route path="/logs" element={<ProtectedRoute><Logs /></ProtectedRoute>} />
                   <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
+                  <Route path="/banjir/kejadian" element={<ProtectedRoute><KejadianBanjir /></ProtectedRoute>} />
+                  <Route path="/banjir/warga" element={<ProtectedRoute><WargaTerdampak /></ProtectedRoute>} />
+                  <Route path="/banjir/wilayah" element={<ProtectedRoute><KelolaWilayah /></ProtectedRoute>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </LiveDataProvider>
