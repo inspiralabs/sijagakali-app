@@ -5,9 +5,8 @@ import { AlertLog } from '@/components/AlertLog';
 import { SummaryCards } from '@/components/SummaryCards';
 import { DangerAlarm } from '@/components/DangerAlarm';
 import { CctvPanel } from '@/components/CctvPanel';
-import { LogIn, Sun, Moon, Volume2, VolumeX, MapPin, Radio } from 'lucide-react';
+import { Sun, Moon, Volume2, VolumeX, MapPin, Radio } from 'lucide-react';
 import { AppBrandLogo } from '@/components/AppBrandLogo';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLiveData } from '@/lib/liveDataContext';
@@ -103,12 +102,6 @@ export default function PublicDashboard() {
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggle} aria-label="Toggle theme">
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
-            <Link to="/login">
-              <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
-                <LogIn className="h-3.5 w-3.5" />
-                Admin
-              </Button>
-            </Link>
           </div>
         </div>
       </header>
