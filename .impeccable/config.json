@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "plus jakarta sans",
+        "createdAt": "2026-08-23T08:54:34.415Z",
+        "reason": "pre-existing brand font choice, predates this session and unrelated to the Mock Data feature work; not something introduced or touched here"
+      }
+    ]
+  }
+}
