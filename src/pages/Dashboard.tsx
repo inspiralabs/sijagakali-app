@@ -4,6 +4,7 @@ import { DeviceCard } from '@/components/DeviceCard';
 import { WaterChart } from '@/components/WaterChart';
 import { AlertLog } from '@/components/AlertLog';
 import { AppLayout } from '@/components/AppLayout';
+import DemoModeBanner from '@/components/DemoModeBanner';
 import { CctvPanel } from '@/components/CctvPanel';
 import { useLiveData } from '@/lib/liveDataContext';
 import { getMonitoringGridClass } from '@/lib/monitoringLayout';
@@ -20,6 +21,7 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
+      <DemoModeBanner />
       <div className="flex w-full flex-col gap-8 pb-2">
         <SummaryCards devices={devices} />
 

@@ -9,6 +9,7 @@ import { Sun, Moon, Volume2, VolumeX, MapPin, Radio } from 'lucide-react';
 import { AppBrandLogo } from '@/components/AppBrandLogo';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import DemoModeBanner from '@/components/DemoModeBanner';
 import { useLiveData } from '@/lib/liveDataContext';
 import { useTheme } from '@/lib/themeContext';
 import { useSiren } from '@/lib/sirenContext';
@@ -56,6 +57,7 @@ export default function PublicDashboard() {
           Koneksi data: {supabaseError}
         </div>
       )}
+      <DemoModeBanner />
 
       <header className="sticky top-0 z-40 border-b border-border/80 bg-card/90 px-4 py-3 shadow-sm backdrop-blur-md sm:px-6">
         <div className="mx-auto flex max-w-7xl items-center justify-between">

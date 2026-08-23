@@ -1,4 +1,4 @@
-import { LayoutDashboard, Server, Bell, FileText, LogOut, Users, HeartHandshake, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Server, Bell, FileText, LogOut, Users, HeartHandshake, ChevronDown, FlaskConical } from 'lucide-react';
 import { AppBrandLogo } from '@/components/AppBrandLogo';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -28,6 +28,7 @@ const items = [
   { title: 'Peringatan', url: '/alerts', icon: Bell },
   { title: 'Logs', url: '/logs', icon: FileText },
   { title: 'Manajemen Admin', url: '/admin/users', icon: Users },
+  { title: 'Mock Data', url: '/admin/mock-data', icon: FlaskConical },
 ];
 
 const banjirItems = [
