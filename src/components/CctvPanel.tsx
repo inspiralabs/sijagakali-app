@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { getSignedUrl } from '@/lib/sijagakali/signedUrlCache';
+import { getMonitoringGridClass } from '@/lib/monitoringLayout';
 import { formatWIB, cn } from '@/lib/utils';
 
 interface CctvTileProps {
@@ -522,13 +523,7 @@ export function CctvPanel({
           </span>
         </div>
 
-        <div
-          className={`grid ${
-            emphasis
-              ? 'gap-5 sm:grid-cols-2 xl:grid-cols-3'
-              : 'gap-4 sm:grid-cols-2 lg:grid-cols-3'
-          }`}
-        >
+        <div className={getMonitoringGridClass(devices.length)}>
           {devices.map((d) => (
             <CctvTile
               key={d.id}

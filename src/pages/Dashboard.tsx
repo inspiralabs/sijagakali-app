@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { SummaryCards } from '@/components/SummaryCards';
 import { DeviceCard } from '@/components/DeviceCard';
 import { WaterChart } from '@/components/WaterChart';
@@ -5,12 +6,14 @@ import { AlertLog } from '@/components/AlertLog';
 import { AppLayout } from '@/components/AppLayout';
 import { CctvPanel } from '@/components/CctvPanel';
 import { useLiveData } from '@/lib/liveDataContext';
+import { getMonitoringGridClass } from '@/lib/monitoringLayout';
 import { findWeatherItem } from '@/components/WeatherDeviceInline';
 import { useWeatherBatch } from '@/lib/sijagakali/useWeatherData';
 import { getDefaultDeploymentSlug } from '@/lib/sijagakaliEnv';
 
 export default function Dashboard() {
   const { devices, alerts, histories } = useLiveData();
+  const gridClass = useMemo(() => getMonitoringGridClass(devices.length), [devices.length]);
   const deploymentSlug = getDefaultDeploymentSlug();
   const weatherBatch = useWeatherBatch(deploymentSlug);
   const weatherItems = weatherBatch.data?.items ?? [];
@@ -27,7 +30,7 @@ export default function Dashboard() {
             </h2>
             <span className="text-xs tabular-nums text-muted-foreground">{devices.length} perangkat</span>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className={gridClass}>
             {devices.map((d) => (
               <DeviceCard
                 key={d.id}

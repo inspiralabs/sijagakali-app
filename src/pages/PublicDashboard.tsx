@@ -13,7 +13,7 @@ import { useLiveData } from '@/lib/liveDataContext';
 import { useTheme } from '@/lib/themeContext';
 import { useSiren } from '@/lib/sirenContext';
 import { formatWIB } from '@/lib/utils';
-import { getPublicMonitoringGridClass } from '@/lib/publicMonitoringLayout';
+import { getMonitoringGridClass } from '@/lib/monitoringLayout';
 import { findWeatherItem } from '@/components/WeatherDeviceInline';
 import { useWeatherBatch } from '@/lib/sijagakali/useWeatherData';
 import { getDefaultDeploymentSlug } from '@/lib/sijagakaliEnv';
@@ -23,7 +23,7 @@ export default function PublicDashboard() {
   const { theme, toggle } = useTheme();
   const { enabled, muted, setMuted } = useSiren();
 
-  const gridClass = useMemo(() => getPublicMonitoringGridClass(devices.length), [devices.length]);
+  const gridClass = useMemo(() => getMonitoringGridClass(devices.length), [devices.length]);
   const deploymentSlug = getDefaultDeploymentSlug();
   const weatherBatch = useWeatherBatch(deploymentSlug);
   const weatherItems = weatherBatch.data?.items ?? [];

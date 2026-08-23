@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { mockDevices } from '@/lib/mockData';
 import { Device } from '@/lib/types';
 import { useLiveData } from '@/lib/liveDataContext';
 import { useAuth } from '@/lib/authContext';
 import { isSupabaseConfigured, getDefaultDeploymentSlug } from '@/lib/sijagakaliEnv';
+import { getSupabase } from '@/lib/supabase';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatWIB } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Link } from 'react-router-dom';
-import { Plus, Trash2, Settings2, Bell } from 'lucide-react';
+import { Plus, Trash2, Settings2, Bell, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppLayout } from '@/components/AppLayout';
 
@@ -67,6 +68,15 @@ function parseOptionalCoord(raw: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+type InactiveDeviceRow = {
+  id: string;
+  deploymentSlug: string;
+  name: string;
+  location: string;
+  mac: string;
+  lastSeen: string | null;
+};
+
 export default function Devices() {
   const { devices: supabaseDevices, refreshDashboard } = useLiveData();
   const { accessToken } = useAuth();
@@ -76,8 +86,75 @@ export default function Devices() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<DeviceFormState>(EMPTY);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteMode, setDeleteMode] = useState<'soft' | 'permanent'>('soft');
   const [formSaving, setFormSaving] = useState(false);
   const [deleteSaving, setDeleteSaving] = useState(false);
+  const [inactiveDevices, setInactiveDevices] = useState<InactiveDeviceRow[]>([]);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+
+  const fetchInactiveDevices = async () => {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    const slug = getDefaultDeploymentSlug();
+    const { data, error } = await supabase
+      .from('device_configs')
+      .select('device_id, deployment_slug, location_name, display_name, mac_address, last_seen_at')
+      .eq('deployment_slug', slug)
+      .eq('is_active', false)
+      .order('device_id');
+    if (error) {
+      toast.error('Gagal memuat perangkat nonaktif', { description: error.message });
+      return;
+    }
+    setInactiveDevices(
+      (data ?? []).map((r) => ({
+        id: r.device_id as string,
+        deploymentSlug: r.deployment_slug as string,
+        name: ((r.display_name as string | null)?.trim() || (r.location_name as string)) as string,
+        location: r.location_name as string,
+        mac: (r.mac_address as string | null)?.trim() || `— ${r.device_id}`,
+        lastSeen: r.last_seen_at as string | null,
+      }))
+    );
+  };
+
+  useEffect(() => {
+    if (fromSupabase) void fetchInactiveDevices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fromSupabase]);
+
+  const openConfirm = (id: string, mode: 'soft' | 'permanent') => {
+    setDeleteMode(mode);
+    setConfirmDeleteId(id);
+  };
+
+  const handleRestore = async (id: string) => {
+    if (!accessToken) {
+      toast.error('Sesi tidak valid', { description: 'Silakan masuk ulang sebagai admin.' });
+      return;
+    }
+    const d = inactiveDevices.find((x) => x.id === id);
+    const slug = d?.deploymentSlug ?? getDefaultDeploymentSlug();
+    setRestoringId(id);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/device/${encodeURIComponent(id)}/restore?deployment_slug=${encodeURIComponent(slug)}`,
+        { method: 'PATCH', headers: authHeadersBearerOnly() }
+      );
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      await refreshDashboard();
+      await fetchInactiveDevices();
+      toast.success(d ? `Perangkat "${d.name}" diaktifkan kembali` : 'Perangkat diaktifkan kembali');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error('Gagal mengaktifkan kembali', { description: msg });
+    } finally {
+      setRestoringId(null);
+    }
+  };
 
   const authHeaders = () => ({
     'Content-Type': 'application/json',
@@ -226,24 +303,33 @@ export default function Devices() {
       toast.error('Sesi tidak valid', { description: 'Silakan masuk ulang sebagai admin.' });
       return;
     }
-    const d = devices.find((x) => x.id === confirmDeleteId);
+    const isPermanent = deleteMode === 'permanent';
+    const d = isPermanent
+      ? inactiveDevices.find((x) => x.id === confirmDeleteId)
+      : devices.find((x) => x.id === confirmDeleteId);
     const slug = d?.deploymentSlug ?? getDefaultDeploymentSlug();
     setDeleteSaving(true);
     try {
-      const res = await fetch(
-        `${API_BASE}/api/device/${encodeURIComponent(confirmDeleteId)}?deployment_slug=${encodeURIComponent(slug)}`,
-        { method: 'DELETE', headers: authHeadersBearerOnly() }
-      );
+      const url = isPermanent
+        ? `${API_BASE}/api/device/${encodeURIComponent(confirmDeleteId)}/permanent?deployment_slug=${encodeURIComponent(slug)}`
+        : `${API_BASE}/api/device/${encodeURIComponent(confirmDeleteId)}?deployment_slug=${encodeURIComponent(slug)}`;
+      const res = await fetch(url, { method: 'DELETE', headers: authHeadersBearerOnly() });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(body.error ?? `HTTP ${res.status}`);
       }
-      await refreshDashboard();
-      toast.success(d ? `Perangkat "${d.name}" dinonaktifkan` : 'Perangkat dinonaktifkan');
+      if (isPermanent) {
+        await fetchInactiveDevices();
+        toast.success(d ? `Perangkat "${d.name}" dihapus permanen` : 'Perangkat dihapus permanen');
+      } else {
+        await refreshDashboard();
+        await fetchInactiveDevices();
+        toast.success(d ? `Perangkat "${d.name}" dinonaktifkan` : 'Perangkat dinonaktifkan');
+      }
       setConfirmDeleteId(null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error('Gagal menonaktifkan perangkat', { description: msg });
+      toast.error(isPermanent ? 'Gagal menghapus permanen' : 'Gagal menonaktifkan perangkat', { description: msg });
     } finally {
       setDeleteSaving(false);
     }
@@ -315,7 +401,7 @@ export default function Devices() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 p-0 text-destructive"
-                        onClick={() => setConfirmDeleteId(d.id)}
+                        onClick={() => openConfirm(d.id, 'soft')}
                         aria-label={fromSupabase ? 'Nonaktifkan' : 'Hapus'}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -324,7 +410,47 @@ export default function Devices() {
                   </td>
                 </tr>
               ))}
-              {devices.length === 0 && (
+              {inactiveDevices.map((d) => (
+                <tr key={d.id} className="border-b border-border last:border-0 bg-muted/30 opacity-70">
+                  <td className="px-4 py-3 font-medium text-foreground">{d.name}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{d.location}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground hidden sm:table-cell">{d.mac}</td>
+                  <td className="px-4 py-3">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+                      Nonaktif
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">
+                    {d.lastSeen ? formatWIB(d.lastSeen) : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex flex-nowrap items-center justify-end gap-1 whitespace-nowrap">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-1 px-2"
+                        onClick={() => void handleRestore(d.id)}
+                        disabled={restoringId === d.id}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline text-xs">
+                          {restoringId === d.id ? 'Memproses…' : 'Aktifkan'}
+                        </span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 p-0 text-destructive"
+                        onClick={() => openConfirm(d.id, 'permanent')}
+                        aria-label="Hapus permanen"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {devices.length === 0 && inactiveDevices.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                     Belum ada perangkat
@@ -474,11 +600,15 @@ export default function Devices() {
       <AlertDialog open={!!confirmDeleteId} onOpenChange={(o) => !o && !deleteSaving && setConfirmDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{fromSupabase ? 'Nonaktifkan perangkat?' : 'Hapus perangkat?'}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {!fromSupabase ? 'Hapus perangkat?' : deleteMode === 'permanent' ? 'Hapus permanen?' : 'Nonaktifkan perangkat?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {fromSupabase
-                ? 'Perangkat akan ditandai tidak aktif di database (soft delete). Data riwayat tetap ada; perangkat tidak lagi muncul di daftar aktif.'
-                : 'Tindakan ini tidak dapat dibatalkan. Perangkat akan dihapus dari daftar pemantauan.'}
+              {!fromSupabase
+                ? 'Tindakan ini tidak dapat dibatalkan. Perangkat akan dihapus dari daftar pemantauan.'
+                : deleteMode === 'permanent'
+                  ? 'Baris perangkat akan dihapus permanen dari database. Jika masih ada data sensor historis untuk perangkat ini, penghapusan akan gagal — nonaktifkan saja jika begitu.'
+                  : 'Perangkat akan ditandai tidak aktif di database (soft delete). Data riwayat tetap ada; perangkat tidak lagi muncul di daftar aktif.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -491,7 +621,13 @@ export default function Devices() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={deleteSaving}
             >
-              {deleteSaving ? 'Memproses…' : fromSupabase ? 'Nonaktifkan' : 'Hapus'}
+              {deleteSaving
+                ? 'Memproses…'
+                : !fromSupabase
+                  ? 'Hapus'
+                  : deleteMode === 'permanent'
+                    ? 'Hapus Permanen'
+                    : 'Nonaktifkan'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
