@@ -239,7 +239,11 @@ function GrafikTab({ devices, slug, authHeaders }: { devices: DeviceOption[]; sl
   const handleStop = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/mock-data/chart/stop`, { method: 'POST', headers: authHeaders() });
+      const res = await fetch(`${API_BASE}/api/mock-data/chart/stop`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({}),
+      });
       if (!res.ok) throw new Error('Gagal menghentikan demo');
       toast.success('Demo grafik dihentikan');
       await fetchStatus();
