@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Waves } from 'lucide-react';
 import { toast } from 'sonner';
+import { format, parseISO } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
+import { StatusPill } from '@/components/ui/status-pill';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -26,6 +31,10 @@ const API_BASE = import.meta.env.VITE_SIJAGAKALIAPI_URL ?? '';
 
 type FormState = { nama: string; tanggal_mulai: string; tanggal_selesai: string; keterangan: string };
 const EMPTY_FORM: FormState = { nama: '', tanggal_mulai: '', tanggal_selesai: '', keterangan: '' };
+
+function formatTanggal(value: string): string {
+  return format(parseISO(value), 'd MMM yyyy', { locale: idLocale });
+}
 
 export default function KejadianBanjir() {
   const { accessToken } = useAuth();
@@ -133,7 +142,7 @@ export default function KejadianBanjir() {
 
   return (
     <AppLayout>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-foreground sm:text-2xl">Kejadian Banjir</h1>
           <p className="text-sm text-muted-foreground">Daftar kejadian banjir untuk pendataan warga terdampak</p>
@@ -143,49 +152,69 @@ export default function KejadianBanjir() {
         </Button>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nama</TableHead>
-            <TableHead>Tanggal Mulai</TableHead>
-            <TableHead>Tanggal Selesai</TableHead>
-            <TableHead>Keterangan</TableHead>
-            <TableHead className="text-right">Aksi</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
+      <div className="overflow-hidden rounded-lg border">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground">
-                Memuat...
-              </TableCell>
+              <TableHead>Nama</TableHead>
+              <TableHead>Tanggal Mulai</TableHead>
+              <TableHead>Tanggal Selesai</TableHead>
+              <TableHead>Keterangan</TableHead>
+              <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
-          ) : events.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground">
-                Belum ada kejadian banjir
-              </TableCell>
-            </TableRow>
-          ) : (
-            events.map((ev) => (
-              <TableRow key={ev.id}>
-                <TableCell className="font-medium">{ev.nama}</TableCell>
-                <TableCell>{ev.tanggal_mulai}</TableCell>
-                <TableCell>{ev.tanggal_selesai ?? <span className="text-muted-foreground">Masih berlangsung</span>}</TableCell>
-                <TableCell className="max-w-xs truncate text-muted-foreground">{ev.keterangan ?? '—'}</TableCell>
-                <TableCell className="text-right">
-                  <Button size="sm" variant="ghost" onClick={() => openEdit(ev)}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setConfirmDelete(ev)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <TableRow key={i}>
+                  {Array.from({ length: 5 }).map((__, j) => (
+                    <TableCell key={j}>
+                      <Skeleton className="h-4 w-full max-w-[10rem]" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : events.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="py-14 text-center">
+                  <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                    <div className="rounded-full bg-muted p-3">
+                      <Waves className="h-6 w-6" />
+                    </div>
+                    <p>Belum ada kejadian banjir yang tercatat</p>
+                    <Button size="sm" variant="outline" onClick={openAdd} className="gap-2">
+                      <Plus className="h-4 w-4" /> Catat Kejadian Pertama
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              events.map((ev) => (
+                <TableRow key={ev.id}>
+                  <TableCell className="font-medium">{ev.nama}</TableCell>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">{formatTanggal(ev.tanggal_mulai)}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {ev.tanggal_selesai ? (
+                      <span className="text-muted-foreground">{formatTanggal(ev.tanggal_selesai)}</span>
+                    ) : (
+                      <StatusPill tone="info" label="Berlangsung" />
+                    )}
+                  </TableCell>
+                  <TableCell className="max-w-xs truncate text-muted-foreground">{ev.keterangan ?? '—'}</TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="ghost" onClick={() => openEdit(ev)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setConfirmDelete(ev)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       <Dialog open={dialogMode !== null} onOpenChange={(open) => !open && setDialogMode(null)}>
         <DialogContent>
@@ -200,11 +229,22 @@ export default function KejadianBanjir() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">Tanggal Mulai</label>
-                <Input type="date" value={form.tanggal_mulai} onChange={(e) => setForm({ ...form, tanggal_mulai: e.target.value })} required />
+                <DatePicker
+                  value={form.tanggal_mulai}
+                  onChange={(v) => setForm((f) => ({ ...f, tanggal_mulai: v, tanggal_selesai: f.tanggal_selesai && f.tanggal_selesai < v ? '' : f.tanggal_selesai }))}
+                  maxDate={new Date()}
+                />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">Tanggal Selesai (opsional)</label>
-                <Input type="date" value={form.tanggal_selesai} onChange={(e) => setForm({ ...form, tanggal_selesai: e.target.value })} />
+                <DatePicker
+                  value={form.tanggal_selesai}
+                  onChange={(v) => setForm({ ...form, tanggal_selesai: v })}
+                  minDate={form.tanggal_mulai ? parseISO(form.tanggal_mulai) : undefined}
+                  allowClear
+                  disabled={!form.tanggal_mulai}
+                  placeholder="Masih berlangsung"
+                />
               </div>
             </div>
             <div>

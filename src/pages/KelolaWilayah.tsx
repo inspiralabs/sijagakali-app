@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, MapPin, Home, Users2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -178,9 +178,18 @@ export default function KelolaWilayah() {
 
       <Tabs defaultValue="dusun">
         <TabsList>
-          <TabsTrigger value="dusun">Dusun/Kampung/Perumahan</TabsTrigger>
-          <TabsTrigger value="rw">RW</TabsTrigger>
-          <TabsTrigger value="rt">RT</TabsTrigger>
+          <TabsTrigger value="dusun" className="gap-1.5">
+            Dusun/Kampung/Perumahan
+            <span className="rounded-full bg-muted px-1.5 text-xs text-muted-foreground">{dusunList.length}</span>
+          </TabsTrigger>
+          <TabsTrigger value="rw" className="gap-1.5">
+            RW
+            {rwParentDusunId && <span className="rounded-full bg-muted px-1.5 text-xs text-muted-foreground">{rwList.length}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="rt" className="gap-1.5">
+            RT
+            {rtParentRwId && <span className="rounded-full bg-muted px-1.5 text-xs text-muted-foreground">{rtList.length}</span>}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dusun" className="space-y-3">
@@ -189,41 +198,48 @@ export default function KelolaWilayah() {
               <Plus className="h-4 w-4" /> Tambah Dusun
             </Button>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nama</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {dusunList.map((d) => (
-                <TableRow key={d.id}>
-                  <TableCell>{d.nama}</TableCell>
-                  <TableCell className="text-right">
-                    <Button size="sm" variant="ghost" onClick={() => openEdit('dusun', d)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive"
-                      onClick={() => setConfirmDelete({ kind: 'dusun', id: d.id, label: d.nama })}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {dusunList.length === 0 && (
+          <div className="overflow-hidden rounded-lg border">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={2} className="text-center text-muted-foreground">
-                    Belum ada data
-                  </TableCell>
+                  <TableHead>Nama</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {dusunList.map((d) => (
+                  <TableRow key={d.id}>
+                    <TableCell>{d.nama}</TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="ghost" onClick={() => openEdit('dusun', d)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive"
+                        onClick={() => setConfirmDelete({ kind: 'dusun', id: d.id, label: d.nama })}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {dusunList.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={2} className="py-10 text-center">
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <div className="rounded-full bg-muted p-2.5">
+                          <MapPin className="h-5 w-5" />
+                        </div>
+                        Belum ada data dusun
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
 
         <TabsContent value="rw" className="space-y-3">
@@ -244,41 +260,55 @@ export default function KelolaWilayah() {
               <Plus className="h-4 w-4" /> Tambah RW
             </Button>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nama</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rwList.map((rw) => (
-                <TableRow key={rw.id}>
-                  <TableCell>{rw.nama}</TableCell>
-                  <TableCell className="text-right">
-                    <Button size="sm" variant="ghost" onClick={() => openEdit('rw', rw)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive"
-                      onClick={() => setConfirmDelete({ kind: 'rw', id: rw.id, label: rw.nama })}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {rwParentDusunId && rwList.length === 0 && (
+          <div className="overflow-hidden rounded-lg border">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={2} className="text-center text-muted-foreground">
-                    Belum ada data
-                  </TableCell>
+                  <TableHead>Nama</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {!rwParentDusunId ? (
+                  <TableRow>
+                    <TableCell colSpan={2} className="py-10 text-center text-muted-foreground">
+                      Pilih dusun induk untuk melihat daftar RW
+                    </TableCell>
+                  </TableRow>
+                ) : rwList.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={2} className="py-10 text-center">
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <div className="rounded-full bg-muted p-2.5">
+                          <Home className="h-5 w-5" />
+                        </div>
+                        Belum ada data RW
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  rwList.map((rw) => (
+                    <TableRow key={rw.id}>
+                      <TableCell>{rw.nama}</TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="ghost" onClick={() => openEdit('rw', rw)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive"
+                          onClick={() => setConfirmDelete({ kind: 'rw', id: rw.id, label: rw.nama })}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
 
         <TabsContent value="rt" className="space-y-3">
@@ -311,41 +341,55 @@ export default function KelolaWilayah() {
               <Plus className="h-4 w-4" /> Tambah RT
             </Button>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nama</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rtList.map((rt) => (
-                <TableRow key={rt.id}>
-                  <TableCell>{rt.nama}</TableCell>
-                  <TableCell className="text-right">
-                    <Button size="sm" variant="ghost" onClick={() => openEdit('rt', rt)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive"
-                      onClick={() => setConfirmDelete({ kind: 'rt', id: rt.id, label: rt.nama })}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {rtParentRwId && rtList.length === 0 && (
+          <div className="overflow-hidden rounded-lg border">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={2} className="text-center text-muted-foreground">
-                    Belum ada data
-                  </TableCell>
+                  <TableHead>Nama</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {!rtParentRwId ? (
+                  <TableRow>
+                    <TableCell colSpan={2} className="py-10 text-center text-muted-foreground">
+                      Pilih dusun dan RW induk untuk melihat daftar RT
+                    </TableCell>
+                  </TableRow>
+                ) : rtList.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={2} className="py-10 text-center">
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <div className="rounded-full bg-muted p-2.5">
+                          <Users2 className="h-5 w-5" />
+                        </div>
+                        Belum ada data RT
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  rtList.map((rt) => (
+                    <TableRow key={rt.id}>
+                      <TableCell>{rt.nama}</TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="ghost" onClick={() => openEdit('rt', rt)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive"
+                          onClick={() => setConfirmDelete({ kind: 'rt', id: rt.id, label: rt.nama })}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
       </Tabs>
 

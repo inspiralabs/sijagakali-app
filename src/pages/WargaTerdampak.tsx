@@ -1,13 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, SlidersHorizontal, FileSpreadsheet, FileText, X, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { StatusPill } from '@/components/ui/status-pill';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -23,6 +29,7 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { useAuth } from '@/lib/authContext';
 import { getSupabase } from '@/lib/supabase';
 import { getDefaultDeploymentSlug } from '@/lib/sijagakaliEnv';
+import { cn } from '@/lib/utils';
 import {
   hitungUmur,
   STATUS_SAAT_INI_LABEL,
@@ -33,8 +40,16 @@ import {
   type WilayahRw,
   type WilayahRt,
 } from '@/lib/banjir/types';
+import type { WargaExportRow } from '@/lib/banjir/export';
 
 const API_BASE = import.meta.env.VITE_SIJAGAKALIAPI_URL ?? '';
+const STATUS_TONE: Record<StatusSaatIni, 'success' | 'warning' | 'neutral'> = {
+  di_rumah: 'success',
+  mengungsi: 'warning',
+  lainnya: 'neutral',
+};
+const ALL = 'all';
+const PAGE_SIZE = 10;
 
 type FormState = {
   nik: string;
@@ -90,6 +105,17 @@ export default function WargaTerdampak() {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<WargaTerdampakRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // ---- Pencarian & filter (client-side; data per kejadian sudah termuat sekaligus) ----
+  const [search, setSearch] = useState('');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filterDusunId, setFilterDusunId] = useState<string>(ALL);
+  const [filterRwId, setFilterRwId] = useState<string>(ALL);
+  const [filterRtId, setFilterRtId] = useState<string>(ALL);
+  const [filterStatus, setFilterStatus] = useState<StatusSaatIni | 'all'>(ALL);
+  const [filterRwOptions, setFilterRwOptions] = useState<WilayahRw[]>([]);
+  const [filterRtOptions, setFilterRtOptions] = useState<WilayahRt[]>([]);
+  const [page, setPage] = useState(1);
 
   const authHeaders = useCallback(
     () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken ?? ''}` }),
@@ -203,26 +229,110 @@ export default function WargaTerdampak() {
     void fetchWarga(selectedEventId);
   }, [selectedEventId, fetchWarga]);
 
-  // ---- Stats for the selected event ----
+  // ---- Filter popover: cascading dusun -> RW -> RT options (independent from the add/edit form's combobox) ----
+  useEffect(() => {
+    if (filterDusunId === ALL) {
+      setFilterRwOptions([]);
+      return;
+    }
+    void fetchRwFor(filterDusunId).then(setFilterRwOptions);
+  }, [filterDusunId, fetchRwFor]);
+
+  useEffect(() => {
+    if (filterRwId === ALL) {
+      setFilterRtOptions([]);
+      return;
+    }
+    void fetchRtFor(filterRwId).then(setFilterRtOptions);
+  }, [filterRwId, fetchRtFor]);
+
+  const setFilterDusun = (v: string) => {
+    setFilterDusunId(v);
+    setFilterRwId(ALL);
+    setFilterRtId(ALL);
+  };
+  const setFilterRw = (v: string) => {
+    setFilterRwId(v);
+    setFilterRtId(ALL);
+  };
+  const resetFilters = () => {
+    setFilterDusunId(ALL);
+    setFilterRwId(ALL);
+    setFilterRtId(ALL);
+    setFilterStatus(ALL);
+  };
+  const activeFilterCount =
+    [filterDusunId, filterRwId, filterRtId].filter((v) => v !== ALL).length + (filterStatus !== ALL ? 1 : 0);
+
+  // ---- Stats for the selected event (overview tetap dari seluruh data, tidak ikut pencarian/filter) ----
   const stats = useMemo(() => {
     const total = warga.length;
     const totalKk = new Set(warga.map((w) => w.no_kk).filter((v): v is string => !!v)).size;
     const mengungsi = warga.filter((w) => w.status_saat_ini === 'mengungsi').length;
     const diRumah = warga.filter((w) => w.status_saat_ini === 'di_rumah').length;
-    const perDusun = new Map<string, number>();
-    for (const w of warga) perDusun.set(w.dusun_id, (perDusun.get(w.dusun_id) ?? 0) + 1);
-    const topDusun = [...perDusun.entries()]
-      .map(([dusunId, count]) => ({ nama: dusunList.find((d) => d.id === dusunId)?.nama ?? '—', count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 3);
-    return { total, totalKk, mengungsi, diRumah, topDusun };
-  }, [warga, dusunList]);
+    return { total, totalKk, mengungsi, diRumah };
+  }, [warga]);
+
+  const namaFor = (id: string, list: { id: string; nama: string }[]) => list.find((x) => x.id === id)?.nama ?? '—';
+
+  const filteredWarga = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return warga.filter((w) => {
+      if (q && !w.nama_lengkap.toLowerCase().includes(q) && !(w.nik ?? '').toLowerCase().includes(q)) return false;
+      if (filterDusunId !== ALL && w.dusun_id !== filterDusunId) return false;
+      if (filterRwId !== ALL && w.rw_id !== filterRwId) return false;
+      if (filterRtId !== ALL && w.rt_id !== filterRtId) return false;
+      if (filterStatus !== ALL && w.status_saat_ini !== filterStatus) return false;
+      return true;
+    });
+  }, [warga, search, filterDusunId, filterRwId, filterRtId, filterStatus]);
+
+  // ---- Paginasi (client-side, 10 baris/halaman) — reset ke halaman 1 tiap kali kejadian/pencarian/filter berubah ----
+  useEffect(() => {
+    setPage(1);
+  }, [selectedEventId, search, filterDusunId, filterRwId, filterRtId, filterStatus]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredWarga.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedWarga = filteredWarga.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const rangeStart = filteredWarga.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(currentPage * PAGE_SIZE, filteredWarga.length);
+
+  const selectedEvent = events.find((e) => e.id === selectedEventId);
+
+  const buildExportRows = (): WargaExportRow[] =>
+    filteredWarga.map((w) => ({
+      nama_lengkap: w.nama_lengkap,
+      nik: w.nik,
+      tanggal_lahir: w.tanggal_lahir,
+      jenis_kelamin: w.jenis_kelamin,
+      no_kk: w.no_kk,
+      kontak_hp: w.kontak_hp,
+      status_saat_ini: w.status_saat_ini,
+      alamat: `${namaFor(w.dusun_id, dusunList)} / RW ${rwNameById.get(w.rw_id) ?? '—'} / RT ${rtNameById.get(w.rt_id) ?? '—'}${
+        w.detail_alamat ? ` — ${w.detail_alamat}` : ''
+      }`,
+      catatan: w.catatan,
+    }));
+
+  // Import dinamis: xlsx/jspdf lumayan berat, jangan ikut terbundel ke setiap halaman
+  // (termasuk dashboard publik) — cuma dimuat saat tombol export benar-benar dipakai.
+  const handleExportExcel = async () => {
+    if (filteredWarga.length === 0) return toast.error('Tidak ada data untuk diexport');
+    const { exportWargaToExcel } = await import('@/lib/banjir/export');
+    exportWargaToExcel(buildExportRows(), selectedEvent?.nama ?? 'warga-terdampak');
+    toast.success(`Excel diexport (${filteredWarga.length} data)`);
+  };
+  const handleExportPdf = async () => {
+    if (filteredWarga.length === 0) return toast.error('Tidak ada data untuk diexport');
+    const { exportWargaToPdf } = await import('@/lib/banjir/export');
+    exportWargaToPdf(buildExportRows(), selectedEvent?.nama ?? 'warga-terdampak');
+    toast.success(`PDF diexport (${filteredWarga.length} data)`);
+  };
 
   const dusunOptions: ComboboxOption[] = dusunList.map((d) => ({ value: d.id, label: d.nama }));
   const rwOptions: ComboboxOption[] = rwList.map((r) => ({ value: r.id, label: r.nama }));
   const rtOptions: ComboboxOption[] = rtList.map((r) => ({ value: r.id, label: r.nama }));
-
-  const namaFor = (id: string, list: { id: string; nama: string }[]) => list.find((x) => x.id === id)?.nama ?? '—';
 
   // ---- Cascading combobox handlers (form state) ----
   const setFormDusun = async (dusunId: string) => {
@@ -418,60 +528,247 @@ export default function WargaTerdampak() {
             </Card>
           </div>
 
-          <div className="mb-4 flex justify-end">
-            <Button onClick={openAdd} className="gap-2">
-              <Plus className="h-4 w-4" /> Tambah Warga
-            </Button>
+          <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="relative flex-1 sm:max-w-xs">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Cari NIK atau nama..."
+                  className="pl-9 pr-8"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    aria-label="Hapus pencarian"
+                    onClick={() => setSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground hover:bg-accent"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <SlidersHorizontal className="h-4 w-4" />
+                    Filter
+                    {activeFilterCount > 0 && (
+                      <Badge variant="secondary" className="ml-0.5 h-5 min-w-5 justify-center px-1">
+                        {activeFilterCount}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 space-y-3" align="start">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Dusun/Kampung</label>
+                    <Select value={filterDusunId} onValueChange={setFilterDusun}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={ALL}>Semua dusun</SelectItem>
+                        {dusunList.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.nama}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">RW</label>
+                    <Select value={filterRwId} onValueChange={setFilterRw} disabled={filterDusunId === ALL}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={ALL}>Semua RW</SelectItem>
+                        {filterRwOptions.map((rw) => (
+                          <SelectItem key={rw.id} value={rw.id}>
+                            {rw.nama}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">RT</label>
+                    <Select value={filterRtId} onValueChange={setFilterRtId} disabled={filterRwId === ALL}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={ALL}>Semua RT</SelectItem>
+                        {filterRtOptions.map((rt) => (
+                          <SelectItem key={rt.id} value={rt.id}>
+                            {rt.nama}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Status</label>
+                    <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as StatusSaatIni | 'all')}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={ALL}>Semua status</SelectItem>
+                        {(Object.keys(STATUS_SAAT_INI_LABEL) as StatusSaatIni[]).map((k) => (
+                          <SelectItem key={k} value={k}>
+                            {STATUS_SAAT_INI_LABEL[k]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-muted-foreground"
+                    disabled={activeFilterCount === 0}
+                    onClick={resetFilters}
+                  >
+                    Reset filter
+                  </Button>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" className="gap-2" onClick={() => void handleExportExcel()}>
+                <FileSpreadsheet className="h-4 w-4" /> Excel
+              </Button>
+              <Button variant="outline" className="gap-2" onClick={() => void handleExportPdf()}>
+                <FileText className="h-4 w-4" /> PDF
+              </Button>
+              <Button onClick={openAdd} className="gap-2">
+                <Plus className="h-4 w-4" /> Tambah Warga
+              </Button>
+            </div>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nama</TableHead>
-                <TableHead>NIK</TableHead>
-                <TableHead>Umur</TableHead>
-                <TableHead>Alamat</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
+          <p className="mb-2 text-xs text-muted-foreground">
+            Menampilkan {rangeStart}–{rangeEnd} dari {filteredWarga.length} warga
+            {filteredWarga.length !== warga.length && <> (difilter dari {warga.length} total)</>}
+          </p>
+
+          <div className="overflow-hidden rounded-lg border">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
-                    Memuat...
-                  </TableCell>
+                  <TableHead>Nama</TableHead>
+                  <TableHead>NIK</TableHead>
+                  <TableHead>Umur</TableHead>
+                  <TableHead>Alamat</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
-              ) : warga.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
-                    Belum ada data warga untuk kejadian ini
-                  </TableCell>
-                </TableRow>
-              ) : (
-                warga.map((w) => (
-                  <TableRow key={w.id}>
-                    <TableCell className="font-medium">{w.nama_lengkap}</TableCell>
-                    <TableCell className="font-mono text-xs">{w.nik ?? '—'}</TableCell>
-                    <TableCell>{hitungUmur(w.tanggal_lahir)} th</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {namaFor(w.dusun_id, dusunList)} / RW {rwNameById.get(w.rw_id) ?? '—'} / RT {rtNameById.get(w.rt_id) ?? '—'}
-                      {w.detail_alamat ? ` — ${w.detail_alamat}` : ''}
-                    </TableCell>
-                    <TableCell>{STATUS_SAAT_INI_LABEL[w.status_saat_ini]}</TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" onClick={() => void openEdit(w)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setConfirmDelete(w)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      {Array.from({ length: 6 }).map((__, j) => (
+                        <TableCell key={j}>
+                          <Skeleton className="h-4 w-full max-w-[9rem]" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : warga.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-14 text-center">
+                      <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                        <div className="rounded-full bg-muted p-3">
+                          <Users className="h-6 w-6" />
+                        </div>
+                        <p>Belum ada data warga untuk kejadian ini</p>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : filteredWarga.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-14 text-center">
+                      <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                        <p>Tidak ada warga yang cocok dengan pencarian/filter</p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSearch('');
+                            resetFilters();
+                          }}
+                        >
+                          Reset pencarian & filter
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  pagedWarga.map((w) => (
+                    <TableRow key={w.id}>
+                      <TableCell className="font-medium">{w.nama_lengkap}</TableCell>
+                      <TableCell className="font-mono text-xs">{w.nik ?? '—'}</TableCell>
+                      <TableCell>{hitungUmur(w.tanggal_lahir)} th</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {namaFor(w.dusun_id, dusunList)} / RW {rwNameById.get(w.rw_id) ?? '—'} / RT {rtNameById.get(w.rt_id) ?? '—'}
+                        {w.detail_alamat ? ` — ${w.detail_alamat}` : ''}
+                      </TableCell>
+                      <TableCell>
+                        <StatusPill tone={STATUS_TONE[w.status_saat_ini]} label={STATUS_SAAT_INI_LABEL[w.status_saat_ini]} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="ghost" onClick={() => void openEdit(w)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setConfirmDelete(w)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {totalPages > 1 && (
+            <Pagination className="mt-3">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setPage((p) => Math.max(1, p - 1));
+                    }}
+                    className={cn(currentPage === 1 && 'pointer-events-none opacity-50')}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="px-3 text-sm text-muted-foreground">
+                    Halaman {currentPage} dari {totalPages}
+                  </span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setPage((p) => Math.min(totalPages, p + 1));
+                    }}
+                    className={cn(currentPage === totalPages && 'pointer-events-none opacity-50')}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </>
       )}
 
@@ -492,7 +789,12 @@ export default function WargaTerdampak() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">Tanggal Lahir</label>
-                <Input type="date" value={form.tanggal_lahir} onChange={(e) => setForm({ ...form, tanggal_lahir: e.target.value })} required />
+                <DatePicker
+                  value={form.tanggal_lahir}
+                  onChange={(v) => setForm({ ...form, tanggal_lahir: v })}
+                  maxDate={new Date()}
+                  yearRange={{ from: new Date().getFullYear() - 100, to: new Date().getFullYear() }}
+                />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">Jenis Kelamin</label>
