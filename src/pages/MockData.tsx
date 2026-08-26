@@ -45,6 +45,7 @@ function NotifikasiTab({ devices, slug, authHeaders }: { devices: DeviceOption[]
   const [waterStatus, setWaterStatus] = useState('waspada');
   const [waterLevelCm, setWaterLevelCm] = useState('');
   const [includeCctv, setIncludeCctv] = useState(false);
+  const [cctvImagePath, setCctvImagePath] = useState('node-001/2026-05-09/20260509T084012_node-001.jpg');
   const [messageText, setMessageText] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -56,6 +57,7 @@ function NotifikasiTab({ devices, slug, authHeaders }: { devices: DeviceOption[]
     water_level_cm: Number(waterLevelCm) || 0,
     water_status: waterStatus,
     include_cctv: includeCctv,
+    cctv_image_path: includeCctv ? cctvImagePath.trim() || undefined : undefined,
     send,
     message_text: messageText.trim() || undefined,
   });
@@ -145,6 +147,18 @@ function NotifikasiTab({ devices, slug, authHeaders }: { devices: DeviceOption[]
         <input type="checkbox" checked={includeCctv} onChange={(e) => setIncludeCctv(e.target.checked)} />
         Sertakan foto CCTV terakhir
       </label>
+      {includeCctv && (
+        <div>
+          <label className="mb-1 block text-xs font-medium text-muted-foreground">
+            Path Gambar di Storage (bucket cctv-images)
+          </label>
+          <Input
+            value={cctvImagePath}
+            onChange={(e) => setCctvImagePath(e.target.value)}
+            placeholder="node-001/2026-05-09/20260509T084012_node-001.jpg"
+          />
+        </div>
+      )}
       <div>
         <label className="mb-1 block text-xs font-medium text-muted-foreground">Teks Pesan (opsional)</label>
         <Textarea value={messageText} onChange={(e) => setMessageText(e.target.value)} placeholder="Kosongkan untuk pakai template default" />
