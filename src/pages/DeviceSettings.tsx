@@ -118,7 +118,7 @@ export default function DeviceSettings() {
         headers: authHeaders(),
         body: JSON.stringify({ deployment_slug: device.deploymentSlug }),
       });
-      const body = (await res.json()) as { signedUrl?: string; error?: string };
+      const body = (await res.json().catch(() => ({}))) as { signedUrl?: string; error?: string };
       if (!res.ok || !body.signedUrl) throw new Error(body.error ?? 'Gagal mengambil snapshot');
       setSnapshotUrl(body.signedUrl);
       toast.success('Snapshot tersimpan');
@@ -130,6 +130,10 @@ export default function DeviceSettings() {
   };
 
   const handleSnapshotIntervalSave = async () => {
+    if (snapshotInterval.trim() === '') {
+      toast.error('Interval snapshot wajib diisi (0 = mati)');
+      return;
+    }
     const n = Number(snapshotInterval);
     if (!Number.isInteger(n) || n < 0 || n > 1440) {
       toast.error('Interval snapshot harus bilangan bulat 0–1440 menit (0 = mati)');
@@ -137,13 +141,13 @@ export default function DeviceSettings() {
     }
     setSnapshotIntervalSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/api/device/${device.id}/settings`, {
+      const res = await fetch(`${API_BASE}/api/device/${encodeURIComponent(device.id)}/settings`, {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ deployment_slug: device.deploymentSlug, snapshot_interval_min: n }),
       });
       if (!res.ok) {
-        const body = (await res.json()) as { error?: string };
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(body.error ?? 'Gagal menyimpan interval snapshot');
       }
       await refreshDashboard();
