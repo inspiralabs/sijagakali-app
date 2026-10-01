@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Battery, Signal, Thermometer, Camera, Video, VideoOff, Settings } from 'lucide-react';
 import { getSignedUrl } from '@/lib/sijagakali/signedUrlCache';
 import { formatWIB, cn } from '@/lib/utils';
+import { HlsPlayer } from '@/components/HlsPlayer';
 import { WeatherDeviceInline } from '@/components/WeatherDeviceInline';
 import type { WeatherBatchItem } from '@/lib/sijagakali/fetchWeather';
 
@@ -105,6 +106,14 @@ function CctvLiveStream({ device, publicView }: { device: Device; publicView?: b
             </Link>
           )}
         </div>
+      </div>
+    );
+  }
+
+  if (/\.m3u8/i.test(url)) {
+    return (
+      <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
+        <HlsPlayer src={url} />
       </div>
     );
   }

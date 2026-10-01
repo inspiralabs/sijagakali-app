@@ -340,9 +340,9 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
                   lastSeen: recordedAt,
                   rssi: typeof row.rssi === 'number' ? row.rssi : d.rssi,
                   battery: typeof row.battery_pct === 'number' ? row.battery_pct : d.battery,
-                  cctvImagePath,
-                  cctvCapturedAt,
-                  cctvSignedUrl: null, // akan direfresh oleh komponen yang perlu
+                  cctvImagePath: cctvImagePath ?? d.cctvImagePath,
+                  cctvCapturedAt: cctvCapturedAt ?? d.cctvCapturedAt,
+                  cctvSignedUrl: cctvImagePath ? null : d.cctvSignedUrl, // akan direfresh oleh komponen yang perlu
                 };
                 newAlerts.push(buildAlert(updated, d.status));
               }
@@ -353,9 +353,9 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
                 lastSeen: recordedAt,
                 rssi: typeof row.rssi === 'number' ? row.rssi : d.rssi,
                 battery: typeof row.battery_pct === 'number' ? row.battery_pct : d.battery,
-                cctvImagePath,
-                cctvCapturedAt,
-                cctvSignedUrl: null,
+                cctvImagePath: cctvImagePath ?? d.cctvImagePath,
+                cctvCapturedAt: cctvCapturedAt ?? d.cctvCapturedAt,
+                cctvSignedUrl: cctvImagePath ? null : d.cctvSignedUrl,
               };
             });
 
@@ -398,6 +398,33 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
           });
 
           setLastUpdated(new Date().toISOString());
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'sijagakali',
+          table: 'device_configs',
+          filter: `deployment_slug=eq.${deploymentSlug}`,
+        },
+        (payload) => {
+          const row = payload.new as Record<string, unknown>;
+          const path = (row.last_snapshot_path as string | null) ?? null;
+          if (!path) return;
+          const deviceId = String(row.device_id ?? '');
+          setDevices((prev) =>
+            prev.map((d) =>
+              d.id === deviceId && d.cctvImagePath !== path
+                ? {
+                    ...d,
+                    cctvImagePath: path,
+                    cctvCapturedAt: (row.last_snapshot_at as string | null) ?? d.cctvCapturedAt,
+                    cctvSignedUrl: null,
+                  }
+                : d
+            )
+          );
         }
       )
       .subscribe();

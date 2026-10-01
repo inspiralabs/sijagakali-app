@@ -22,6 +22,7 @@ import {
 import { getSignedUrl } from '@/lib/sijagakali/signedUrlCache';
 import { getMonitoringGridClass } from '@/lib/monitoringLayout';
 import { formatWIB, cn } from '@/lib/utils';
+import { HlsPlayer } from '@/components/HlsPlayer';
 
 interface CctvTileProps {
   device: Device;
@@ -93,6 +94,7 @@ function CctvTile({
   };
 
   const hasStream = !!(device.cctvUrl && String(device.cctvUrl).trim());
+  const isHls = hasStream && /\.m3u8/i.test(device.cctvUrl!);
   const isIframe = hasStream && !/\.mp4|\.m3u8/i.test(device.cctvUrl!);
 
   const canExpandSnapshot = !!device.cctvImagePath;
@@ -183,6 +185,12 @@ function CctvTile({
             </Link>
           )}
         </div>
+      ) : isHls ? (
+        <HlsPlayer
+          src={device.cctvUrl!}
+          poster={imgSrc}
+          className={forDialog ? 'absolute inset-0 bg-black' : 'relative h-full w-full bg-black'}
+        />
       ) : isIframe ? (
         <iframe
           src={device.cctvUrl}
