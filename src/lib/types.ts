@@ -39,6 +39,8 @@ export interface Device {
   cctvImagePath?: string | null;
   /** Waktu capture snapshot terakhir. */
   cctvCapturedAt?: string | null;
+  /** Menit antar snapshot CCTV berkala; 0 = mati. */
+  snapshotIntervalMin?: number;
   /** Signed URL terakhir yang di-resolve dari path; di-cache di client. */
   cctvSignedUrl?: string | null;
   /** Kode wilayah desa BMKG (ADM4) untuk prakiraan cuaca. */

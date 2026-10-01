@@ -9,6 +9,8 @@ const DEVICE_CONFIGS_SELECT_WITH_GEO_MAC =
   `${DEVICE_CONFIGS_SELECT_BASE}, mac_address, latitude, longitude`;
 const DEVICE_CONFIGS_SELECT_FULL =
   `${DEVICE_CONFIGS_SELECT_BASE}, mac_address, latitude, longitude, display_name, bmkg_adm4`;
+const DEVICE_CONFIGS_SELECT_WITH_SNAPSHOT =
+  `${DEVICE_CONFIGS_SELECT_FULL}, snapshot_interval_min, last_snapshot_path, last_snapshot_at`;
 
 /** Koordinat peta per `device_id` (DB belum menyimpan lat/lng). */
 const NODE_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -32,6 +34,9 @@ type DeviceConfigRow = {
   mac_address?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  snapshot_interval_min?: number | null;
+  last_snapshot_path?: string | null;
+  last_snapshot_at?: string | null;
   display_name?: string | null;
   bmkg_adm4?: string | null;
 };
@@ -118,8 +123,10 @@ function mapRowToDevice(
     lastSeen: latest?.recorded_at ?? c.last_seen_at ?? new Date().toISOString(),
     cctvLocalIp: c.cctv_local_ip ?? undefined,
     cctvUrl: c.stream_playback_url ?? undefined,
-    cctvImagePath: latest?.cctv_image_path ?? null,
-    cctvCapturedAt: latest?.cctv_captured_at ?? null,
+    // Foto terbaru per device (kejadian/berkala/manual); fallback ke reading lama.
+    cctvImagePath: c.last_snapshot_path ?? latest?.cctv_image_path ?? null,
+    cctvCapturedAt: c.last_snapshot_at ?? latest?.cctv_captured_at ?? null,
+    snapshotIntervalMin: c.snapshot_interval_min ?? 15,
     cctvSignedUrl: null,
     bmkgAdm4: c.bmkg_adm4 ?? null,
   };
@@ -137,11 +144,22 @@ export async function fetchDashboardSnapshot(
 
   let { data: configs, error: errConfigs } = await supabase
     .from('device_configs')
-    .select(DEVICE_CONFIGS_SELECT_FULL)
+    .select(DEVICE_CONFIGS_SELECT_WITH_SNAPSHOT)
     .eq('deployment_slug', deploymentSlug)
     .eq('is_active', true)
     .order('device_id');
 
+  // Kompatibilitas: DB belum menjalankan migrasi snapshot (Task 11).
+  if (isMissingColumnError(errConfigs)) {
+    const full = await supabase
+      .from('device_configs')
+      .select(DEVICE_CONFIGS_SELECT_FULL)
+      .eq('deployment_slug', deploymentSlug)
+      .eq('is_active', true)
+      .order('device_id');
+    configs = full.data as typeof configs;
+    errConfigs = full.error;
+  }
   // Kompatibilitas: migrasi parsial (mis. belum ada display_name atau belum ada geo/MAC).
   if (isMissingColumnError(errConfigs)) {
     const geoOnly = await supabase

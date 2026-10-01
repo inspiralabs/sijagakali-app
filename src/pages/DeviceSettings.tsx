@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ArrowLeft, Video, Save, MessageSquare, ChevronRight, CloudRain } from 'lucide-react';
+import { ArrowLeft, Video, Save, MessageSquare, ChevronRight, CloudRain, Camera } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -27,6 +27,10 @@ export default function DeviceSettings() {
   const [cctvLocalIp, setCctvLocalIp] = useState('');
   const [streamPlaybackUrl, setStreamPlaybackUrl] = useState('');
   const [cctvSaving, setCctvSaving] = useState(false);
+  const [snapshotUrl, setSnapshotUrl] = useState<string | null>(null);
+  const [snapshotLoading, setSnapshotLoading] = useState(false);
+  const [snapshotInterval, setSnapshotInterval] = useState('15');
+  const [snapshotIntervalSaving, setSnapshotIntervalSaving] = useState(false);
 
   const [locationName, setLocationName] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -57,6 +61,7 @@ export default function DeviceSettings() {
     setTSiaga(String(device.threshold.siaga));
     setTBahaya(String(device.threshold.awas));
     setBmkgAdm4(device.bmkgAdm4 ?? '');
+    setSnapshotInterval(String(device.snapshotIntervalMin ?? 15));
   }, [device?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!device) {
@@ -102,6 +107,51 @@ export default function DeviceSettings() {
       /* toast dari context */
     } finally {
       setCctvSaving(false);
+    }
+  };
+
+  const handleTakeSnapshot = async () => {
+    setSnapshotLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/cctv/${encodeURIComponent(device.id)}/snapshot`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ deployment_slug: device.deploymentSlug }),
+      });
+      const body = (await res.json()) as { signedUrl?: string; error?: string };
+      if (!res.ok || !body.signedUrl) throw new Error(body.error ?? 'Gagal mengambil snapshot');
+      setSnapshotUrl(body.signedUrl);
+      toast.success('Snapshot tersimpan');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSnapshotLoading(false);
+    }
+  };
+
+  const handleSnapshotIntervalSave = async () => {
+    const n = Number(snapshotInterval);
+    if (!Number.isInteger(n) || n < 0 || n > 1440) {
+      toast.error('Interval snapshot harus bilangan bulat 0–1440 menit (0 = mati)');
+      return;
+    }
+    setSnapshotIntervalSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/device/${device.id}/settings`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ deployment_slug: device.deploymentSlug, snapshot_interval_min: n }),
+      });
+      if (!res.ok) {
+        const body = (await res.json()) as { error?: string };
+        throw new Error(body.error ?? 'Gagal menyimpan interval snapshot');
+      }
+      await refreshDashboard();
+      toast.success(n === 0 ? 'Snapshot berkala dimatikan' : `Snapshot berkala tiap ${n} menit`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSnapshotIntervalSaving(false);
     }
   };
 
@@ -418,6 +468,37 @@ export default function DeviceSettings() {
               {cctvSaving ? 'Menyimpan...' : 'Simpan Pengaturan CCTV'}
             </Button>
           </form>
+          <div className="mt-4 space-y-2 border-t border-border pt-4">
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              Snapshot berkala (menit, 0 = mati)
+            </label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                min={0}
+                max={1440}
+                value={snapshotInterval}
+                onChange={(e) => setSnapshotInterval(e.target.value)}
+                className="w-28"
+              />
+              <Button type="button" variant="outline" disabled={snapshotIntervalSaving} onClick={handleSnapshotIntervalSave}>
+                {snapshotIntervalSaving ? 'Menyimpan...' : 'Simpan interval'}
+              </Button>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={snapshotLoading || !cctvLocalIp.trim()}
+              onClick={handleTakeSnapshot}
+              className="gap-2"
+            >
+              <Camera className="h-4 w-4" />
+              {snapshotLoading ? 'Mengambil...' : 'Ambil snapshot'}
+            </Button>
+            {snapshotUrl && (
+              <img src={snapshotUrl} alt={`Snapshot ${device.name}`} className="w-full rounded-lg border border-border" />
+            )}
+          </div>
         </Card>
 
         <Card className="border-border bg-card p-4">
