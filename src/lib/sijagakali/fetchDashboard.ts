@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Device, StatusLevel, WaterReading, AlertEvent } from '@/lib/types';
 import { getStatusFromLevel } from '@/lib/types';
+import { freshPiTemp } from './piTemp';
 
 const HISTORY_CAP = 144;
 const DEVICE_CONFIGS_SELECT_BASE =
@@ -11,6 +12,7 @@ const DEVICE_CONFIGS_SELECT_FULL =
   `${DEVICE_CONFIGS_SELECT_BASE}, mac_address, latitude, longitude, display_name, bmkg_adm4`;
 const DEVICE_CONFIGS_SELECT_WITH_SNAPSHOT =
   `${DEVICE_CONFIGS_SELECT_FULL}, snapshot_interval_min, last_snapshot_path, last_snapshot_at`;
+const DEVICE_CONFIGS_SELECT_WITH_PI = `${DEVICE_CONFIGS_SELECT_WITH_SNAPSHOT}, pi_temp_c, pi_temp_at`;
 
 /** Koordinat peta per `device_id` (DB belum menyimpan lat/lng). */
 const NODE_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -39,6 +41,8 @@ type DeviceConfigRow = {
   last_snapshot_at?: string | null;
   display_name?: string | null;
   bmkg_adm4?: string | null;
+  pi_temp_c?: number | string | null;
+  pi_temp_at?: string | null;
 };
 
 type SensorReadingLite = {
@@ -117,7 +121,7 @@ function mapRowToDevice(
     threshold,
     battery: latest?.battery_pct ?? 0,
     rssi: latest?.rssi ?? 0,
-    boxTemp: 0,
+    boxTemp: freshPiTemp(c.pi_temp_c, c.pi_temp_at),
     reportInterval: c.read_interval_sec,
     status,
     lastSeen: latest?.recorded_at ?? c.last_seen_at ?? new Date().toISOString(),
@@ -144,10 +148,22 @@ export async function fetchDashboardSnapshot(
 
   let { data: configs, error: errConfigs } = await supabase
     .from('device_configs')
-    .select(DEVICE_CONFIGS_SELECT_WITH_SNAPSHOT)
+    .select(DEVICE_CONFIGS_SELECT_WITH_PI)
     .eq('deployment_slug', deploymentSlug)
     .eq('is_active', true)
     .order('device_id');
+
+  // Kompatibilitas: DB belum menjalankan migrasi suhu Pi (20261004090000).
+  if (isMissingColumnError(errConfigs)) {
+    const snap = await supabase
+      .from('device_configs')
+      .select(DEVICE_CONFIGS_SELECT_WITH_SNAPSHOT)
+      .eq('deployment_slug', deploymentSlug)
+      .eq('is_active', true)
+      .order('device_id');
+    configs = snap.data as typeof configs;
+    errConfigs = snap.error;
+  }
 
   // Kompatibilitas: DB belum menjalankan migrasi snapshot (Task 11).
   if (isMissingColumnError(errConfigs)) {
