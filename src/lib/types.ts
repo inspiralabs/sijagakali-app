@@ -27,7 +27,6 @@ export interface Device {
   threshold: DeviceThreshold;
   battery: number;
   rssi: number;
-  boxTemp: number | null;
   reportInterval: number;
   status: StatusLevel;
   lastSeen: string;
