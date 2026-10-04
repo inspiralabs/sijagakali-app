@@ -1,14 +1,12 @@
 import type { SijagakaliClient as SupabaseClient } from '@/lib/supabase';
 import type { Device, StatusLevel, WaterReading, AlertEvent } from '@/lib/types';
 import { getStatusFromLevel } from '@/lib/types';
-import { freshPiTemp } from './piTemp';
 
 const HISTORY_CAP = 144;
 const DEVICE_CONFIGS_SELECT_BASE =
   'deployment_slug, device_id, location_name, sensor_height_cm, read_interval_sec, threshold_waspada_cm, threshold_siaga_cm, threshold_bahaya_cm, last_seen_at, cctv_local_ip, stream_playback_url';
 const DEVICE_CONFIGS_SELECT =
   `${DEVICE_CONFIGS_SELECT_BASE}, mac_address, latitude, longitude, display_name, bmkg_adm4, snapshot_interval_min, last_snapshot_path, last_snapshot_at`;
-const DEVICE_CONFIGS_SELECT_WITH_PI = `${DEVICE_CONFIGS_SELECT}, pi_temp_c, pi_temp_at`;
 
 /** Koordinat peta per `device_id` (DB belum menyimpan lat/lng). */
 const NODE_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -37,8 +35,6 @@ type DeviceConfigRow = {
   last_snapshot_at?: string | null;
   display_name?: string | null;
   bmkg_adm4?: string | null;
-  pi_temp_c?: number | string | null;
-  pi_temp_at?: string | null;
 };
 
 type SensorReadingLite = {
@@ -117,7 +113,6 @@ function mapRowToDevice(
     threshold,
     battery: latest?.battery_pct ?? 0,
     rssi: latest?.rssi ?? 0,
-    boxTemp: freshPiTemp(c.pi_temp_c, c.pi_temp_at),
     reportInterval: c.read_interval_sec,
     status,
     lastSeen: latest?.recorded_at ?? c.last_seen_at ?? new Date().toISOString(),
@@ -139,24 +134,12 @@ export async function fetchDashboardSnapshot(
   devices: Device[];
   histories: Record<string, WaterReading[]>;
 }> {
-  let { data: configs, error: errConfigs } = await supabase
+  const { data: configs, error: errConfigs } = await supabase
     .from('device_configs')
-    .select(DEVICE_CONFIGS_SELECT_WITH_PI)
+    .select(DEVICE_CONFIGS_SELECT)
     .eq('deployment_slug', deploymentSlug)
     .eq('is_active', true)
     .order('device_id');
-
-  // Kompatibilitas: DB belum menjalankan migrasi suhu Pi (20261004090000) — suhu tampil "—".
-  if (errConfigs && /column .* does not exist|could not find the .* column/i.test(errConfigs.message)) {
-    const withoutPi = await supabase
-      .from('device_configs')
-      .select(DEVICE_CONFIGS_SELECT)
-      .eq('deployment_slug', deploymentSlug)
-      .eq('is_active', true)
-      .order('device_id');
-    configs = withoutPi.data as typeof configs;
-    errConfigs = withoutPi.error;
-  }
 
   if (errConfigs) throw errConfigs;
 

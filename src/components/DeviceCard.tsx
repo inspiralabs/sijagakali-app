@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Device, STATUS_CONFIG } from '@/lib/types';
 import { StatusBadge } from './StatusBadge';
 import { Card } from '@/components/ui/card';
-import { Battery, Signal, Thermometer, Camera, Video, VideoOff, Settings } from 'lucide-react';
+import { Camera, Video, VideoOff, Settings } from 'lucide-react';
 import { getSignedUrl } from '@/lib/sijagakali/signedUrlCache';
 import { formatWIB, cn } from '@/lib/utils';
 import { HlsPlayer } from '@/components/HlsPlayer';
@@ -250,22 +250,6 @@ export function DeviceCard({
           Awas
           <br />
           <b className="text-status-bahaya">{device.threshold.awas} cm</b>
-        </span>
-      </div>
-
-      {/* Mini stats */}
-      <div className="flex shrink-0 items-center gap-4 border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1" title="Belum ada sensor baterai">
-          <Battery className="h-3.5 w-3.5" />
-          —
-        </span>
-        <span className="flex items-center gap-1">
-          <Signal className="h-3.5 w-3.5" />
-          {device.rssi} dBm
-        </span>
-        <span className="flex items-center gap-1" title="Suhu CPU Raspberry Pi lokasi">
-          <Thermometer className="h-3.5 w-3.5" />
-          {device.boxTemp === null ? '—' : `${device.boxTemp}°C`}
         </span>
       </div>
 
