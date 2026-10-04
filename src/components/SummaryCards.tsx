@@ -1,4 +1,5 @@
 import { Device } from '@/lib/types';
+import { isDeviceOnline } from '@/lib/deviceStatus';
 import { Card } from '@/components/ui/card';
 import { Activity, AlertTriangle, Droplets, Wifi } from 'lucide-react';
 
@@ -10,7 +11,7 @@ export function SummaryCards({ devices }: SummaryCardsProps) {
   const total = devices.length;
   const bahayaCount = devices.filter(d => d.status === 'bahaya').length;
   const avgLevel = total ? Math.round(devices.reduce((s, d) => s + d.waterLevel, 0) / total) : 0;
-  const onlineCount = devices.length; // mock: all online
+  const onlineCount = devices.filter((d) => isDeviceOnline(d)).length;
 
   const cards = [
     {
