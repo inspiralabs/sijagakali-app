@@ -98,55 +98,26 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Fallback provider tanpa Supabase (dev/demo mode)
-// ─────────────────────────────────────────────────────────────────────────────
-function MockAuthProvider({ children }: { children: ReactNode }) {
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return sessionStorage.getItem('sja_auth') === 'true';
-  });
-
-  const login = useCallback(
-    async (
-      email: string,
-      password: string,
-      _captchaToken?: string | null,
-    ): Promise<{ error?: string }> => {
-    if (email && password) {
-      setIsLoggedIn(true);
-      sessionStorage.setItem('sja_auth', 'true');
-      return {};
-    }
-    return { error: 'Email atau kata sandi salah' };
-  }, []);
-
-  const logout = useCallback(async () => {
-    setIsLoggedIn(false);
-    sessionStorage.removeItem('sja_auth');
-  }, []);
-
-  return (
-    <AuthContext.Provider value={{
-      isLoggedIn,
-      role: isLoggedIn ? 'admin' : 'public',
-      user: null,
-      accessToken: null,
-      loading: false,
-      login,
-      logout,
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Export: pilih provider berdasarkan konfigurasi
+// Export
 // ─────────────────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
-  if (isSupabaseConfigured()) {
-    return <SupabaseAuthProvider>{children}</SupabaseAuthProvider>;
-  }
-  return <MockAuthProvider>{children}</MockAuthProvider>;
+  if (!isSupabaseConfigured()) return <MissingSupabaseConfig />;
+  return <SupabaseAuthProvider>{children}</SupabaseAuthProvider>;
+}
+
+/** Tanpa Supabase dashboard tidak punya data asli — tampilkan kesalahan konfigurasi, bukan data palsu. */
+function MissingSupabaseConfig() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background p-6">
+      <div className="max-w-md rounded-xl border border-border bg-card p-6 text-center shadow-sm">
+        <h1 className="text-lg font-semibold text-foreground">Konfigurasi belum lengkap</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Dashboard tidak bisa terhubung ke database. Isi <code>VITE_SUPABASE_URL</code> dan{' '}
+          <code>VITE_SUPABASE_ANON_KEY</code> lalu build ulang aplikasi.
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export const useAuth = () => useContext(AuthContext);

@@ -21,13 +21,13 @@ Dokumen fitur & contoh kasus (stakeholder + arsitektur): [`../plans/SiJagaKali-F
 - **Ringkasan titik pantau**: kartu per perangkat (gelombang level air, ambang, telemetry); CCTV tidak diduplikasi di kartu (hanya di section Pantau CCTV).
 - **Pantau CCTV**: sama seperti publik + tautan pengaturan per perangkat (ikon gear).
 - **Tren & peringatan**: grafik + log (layout 70/30), tanpa panel “kesehatan perangkat” terpisah (informasi serupa sudah di kartu titik pantau).
-- Data **realtime** dari Supabase (bila dikonfigurasi); fallback **mock** jika env belum diisi.
+- Data **realtime** dari Supabase.
 
 ### Perangkat (`/devices`)
 
 - Daftar titik pantau dengan status, level, pembaruan terakhir.
 - Tautan ke **Pengaturan** dan **Notifikasi** per perangkat.
-- Mode **Supabase**: pengeditan CRUD penuh lewat UI dibatasi (arahkan ke SQL/API); mode **mock** mendukung tambah/ubah/hapus lokal untuk demo.
+- Tambah, ubah, nonaktifkan, pulihkan, dan hapus permanen perangkat lewat API.
 
 ### Pengaturan per perangkat (`/devices/:id/settings`)
 
@@ -78,7 +78,7 @@ Dokumen fitur & contoh kasus (stakeholder + arsitektur): [`../plans/SiJagaKali-F
 | `VITE_SIJAGAKALI_DEPLOYMENT_SLUG` | Slug wilayah pemasangan default |
 | `VITE_SIJAGAKALIAPI_URL` | Base URL API Fastify (interval, device settings, admin, notifikasi uji) |
 
-Tanpa Supabase yang valid, aplikasi dapat berjalan dengan **data mock** untuk UI.
+Tanpa `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` yang valid, aplikasi menampilkan pesan **"Konfigurasi belum lengkap"** (tidak ada data palsu).
 
 ---
 

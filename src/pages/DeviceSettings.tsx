@@ -71,7 +71,7 @@ export default function DeviceSettings() {
           <ArrowLeft className="h-4 w-4" /> Kembali ke Perangkat
         </Link>
         <p className="mt-4 text-sm text-muted-foreground">
-          Tidak ada perangkat. Periksa seed Supabase atau mode mock.
+          Tidak ada perangkat aktif. Tambahkan perangkat di menu Perangkat.
         </p>
       </AppLayout>
     );

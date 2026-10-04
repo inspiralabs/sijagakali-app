@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { mockDevices } from '@/lib/mockData';
 import { Device } from '@/lib/types';
 import { useLiveData } from '@/lib/liveDataContext';
 import { useAuth } from '@/lib/authContext';
-import { isSupabaseConfigured, getDefaultDeploymentSlug } from '@/lib/sijagakaliEnv';
+import { getDefaultDeploymentSlug } from '@/lib/sijagakaliEnv';
 import { getSupabase } from '@/lib/supabase';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatWIB } from '@/lib/utils';
@@ -80,9 +79,7 @@ type InactiveDeviceRow = {
 export default function Devices() {
   const { devices: supabaseDevices, refreshDashboard } = useLiveData();
   const { accessToken } = useAuth();
-  const [localMockDevices, setLocalMockDevices] = useState<Device[]>(mockDevices);
-  const fromSupabase = isSupabaseConfigured();
-  const devices = fromSupabase ? supabaseDevices : localMockDevices;
+  const devices = supabaseDevices;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<DeviceFormState>(EMPTY);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -119,9 +116,9 @@ export default function Devices() {
   };
 
   useEffect(() => {
-    if (fromSupabase) void fetchInactiveDevices();
+    void fetchInactiveDevices();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fromSupabase]);
+  }, []);
 
   const openConfirm = (id: string, mode: 'soft' | 'permanent') => {
     setDeleteMode(mode);
@@ -166,7 +163,7 @@ export default function Devices() {
   });
 
   const openCreate = () => {
-    setForm(fromSupabase ? { ...EMPTY, reportInterval: '3600' } : { ...EMPTY });
+    setForm({ ...EMPTY, reportInterval: '3600' });
     setDialogOpen(true);
   };
 
@@ -184,36 +181,6 @@ export default function Devices() {
       return;
     }
 
-    if (!fromSupabase) {
-      const id = `esp_${Date.now()}`;
-      const sh = Number(form.sensorHeightCm) || 250;
-      setLocalMockDevices((prev) => [
-        ...prev,
-        {
-          id,
-          name: form.name || form.location,
-          location: form.location,
-          mac: form.mac,
-          lat: Number(form.lat) || 0,
-          lng: Number(form.lng) || 0,
-          cctvUrl: form.cctvUrl || undefined,
-          sensorHeightCm: sh,
-          waterLevel: 0,
-          maxCapacity: Math.max(threshold.awas + 50, 200),
-          threshold,
-          battery: 100,
-          rssi: -60,
-          boxTemp: 30,
-          reportInterval: Number(form.reportInterval) || 300,
-          status: 'normal',
-          lastSeen: new Date().toISOString(),
-        },
-      ]);
-      toast.success(`Perangkat "${form.name || form.location}" ditambahkan`);
-      setDialogOpen(false);
-      setForm(EMPTY);
-      return;
-    }
 
     if (!accessToken) {
       toast.error('Sesi tidak valid', { description: 'Silakan masuk ulang sebagai admin.' });
@@ -292,13 +259,6 @@ export default function Devices() {
 
   const handleDelete = async () => {
     if (!confirmDeleteId) return;
-    if (!fromSupabase) {
-      const d = devices.find((x) => x.id === confirmDeleteId);
-      setLocalMockDevices((prev) => prev.filter((x) => x.id !== confirmDeleteId));
-      setConfirmDeleteId(null);
-      if (d) toast.success(`Perangkat "${d.name}" dihapus`);
-      return;
-    }
     if (!accessToken) {
       toast.error('Sesi tidak valid', { description: 'Silakan masuk ulang sebagai admin.' });
       return;
@@ -343,12 +303,12 @@ export default function Devices() {
           <Plus className="h-4 w-4" /> Tambah Perangkat
         </Button>
       </div>
-      {fromSupabase && (
+      <>
         <p className="mb-3 text-xs text-muted-foreground">
           Tambah atau nonaktifkan dari sini. Mengubah nama, lokasi, ambang, sensor, MAC, dan koordinat: buka{' '}
           <strong>Pengaturan</strong> pada baris perangkat.
         </p>
-      )}
+      </>
 
       <Card className="overflow-hidden border-border bg-card">
         <div className="overflow-x-auto">
@@ -377,7 +337,7 @@ export default function Devices() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex flex-nowrap items-center justify-end gap-1 whitespace-nowrap">
-                      {fromSupabase && (
+                      <>
                         <Button variant="outline" size="sm" className="h-8 gap-1 px-2" asChild>
                           <Link
                             to={`/devices/${encodeURIComponent(d.id)}/notifications`}
@@ -387,7 +347,7 @@ export default function Devices() {
                             <span className="hidden sm:inline text-xs">Peringatan</span>
                           </Link>
                         </Button>
-                      )}
+                      </>
                       <Button variant="outline" size="sm" className="h-8 gap-1 px-2" asChild>
                         <Link
                           to={`/devices/${encodeURIComponent(d.id)}/settings`}
@@ -402,7 +362,7 @@ export default function Devices() {
                         size="icon"
                         className="h-8 w-8 p-0 text-destructive"
                         onClick={() => openConfirm(d.id, 'soft')}
-                        aria-label={fromSupabase ? 'Nonaktifkan' : 'Hapus'}
+                        aria-label="Nonaktifkan"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -468,7 +428,7 @@ export default function Devices() {
             <DialogTitle>Tambah perangkat baru</DialogTitle>
           </DialogHeader>
           <form className="space-y-3" onSubmit={handleSubmit}>
-            {fromSupabase && (
+            <>
               <div>
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">ID Perangkat (device_id)</label>
                 <Input
@@ -480,7 +440,7 @@ export default function Devices() {
                   title="1–120 karakter: huruf, angka, titik, garis bawah, tanda hubung"
                 />
               </div>
-            )}
+            </>
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">Nama tampilan</label>
               <Input
@@ -585,7 +545,7 @@ export default function Devices() {
                 value={form.reportInterval}
                 onChange={(e) => setForm({ ...form, reportInterval: e.target.value })}
                 type="number"
-                placeholder={fromSupabase ? '3600' : '300'}
+                placeholder="3600"
                 min={10}
                 required
               />
@@ -601,12 +561,10 @@ export default function Devices() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {!fromSupabase ? 'Hapus perangkat?' : deleteMode === 'permanent' ? 'Hapus permanen?' : 'Nonaktifkan perangkat?'}
+              {deleteMode === 'permanent' ? 'Hapus permanen?' : 'Nonaktifkan perangkat?'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {!fromSupabase
-                ? 'Tindakan ini tidak dapat dibatalkan. Perangkat akan dihapus dari daftar pemantauan.'
-                : deleteMode === 'permanent'
+              {deleteMode === 'permanent'
                   ? 'Baris perangkat akan dihapus permanen dari database. Jika masih ada data sensor historis untuk perangkat ini, penghapusan akan gagal — nonaktifkan saja jika begitu.'
                   : 'Perangkat akan ditandai tidak aktif di database (soft delete). Data riwayat tetap ada; perangkat tidak lagi muncul di daftar aktif.'}
             </AlertDialogDescription>
@@ -623,9 +581,7 @@ export default function Devices() {
             >
               {deleteSaving
                 ? 'Memproses…'
-                : !fromSupabase
-                  ? 'Hapus'
-                  : deleteMode === 'permanent'
+                : deleteMode === 'permanent'
                     ? 'Hapus Permanen'
                     : 'Nonaktifkan'}
             </AlertDialogAction>
