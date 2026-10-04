@@ -24,7 +24,7 @@ function CaptionDropdown({ value, onChange, children }: DropdownProps) {
       </SelectTrigger>
       <SelectContent className="max-h-64">
         {options.map((option) => (
-          <SelectItem key={option.props.value} value={String(option.props.value)}>
+          <SelectItem key={String(option.props.value)} value={String(option.props.value)}>
             {option.props.children}
           </SelectItem>
         ))}

@@ -1,16 +1,12 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { SijagakaliClient as SupabaseClient } from '@/lib/supabase';
 import type { Device, StatusLevel, WaterReading, AlertEvent } from '@/lib/types';
 import { getStatusFromLevel } from '@/lib/types';
 
 const HISTORY_CAP = 144;
 const DEVICE_CONFIGS_SELECT_BASE =
   'deployment_slug, device_id, location_name, sensor_height_cm, read_interval_sec, threshold_waspada_cm, threshold_siaga_cm, threshold_bahaya_cm, last_seen_at, cctv_local_ip, stream_playback_url';
-const DEVICE_CONFIGS_SELECT_WITH_GEO_MAC =
-  `${DEVICE_CONFIGS_SELECT_BASE}, mac_address, latitude, longitude`;
-const DEVICE_CONFIGS_SELECT_FULL =
-  `${DEVICE_CONFIGS_SELECT_BASE}, mac_address, latitude, longitude, display_name, bmkg_adm4`;
-const DEVICE_CONFIGS_SELECT_WITH_SNAPSHOT =
-  `${DEVICE_CONFIGS_SELECT_FULL}, snapshot_interval_min, last_snapshot_path, last_snapshot_at`;
+const DEVICE_CONFIGS_SELECT =
+  `${DEVICE_CONFIGS_SELECT_BASE}, mac_address, latitude, longitude, display_name, bmkg_adm4, snapshot_interval_min, last_snapshot_path, last_snapshot_at`;
 
 /** Koordinat peta per `device_id` (DB belum menyimpan lat/lng). */
 const NODE_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -139,48 +135,12 @@ export async function fetchDashboardSnapshot(
   devices: Device[];
   histories: Record<string, WaterReading[]>;
 }> {
-  const isMissingColumnError = (e: { message: string } | null) =>
-    Boolean(e && /column .* does not exist|could not find the .* column/i.test(e.message));
-
-  let { data: configs, error: errConfigs } = await supabase
+  const { data: configs, error: errConfigs } = await supabase
     .from('device_configs')
-    .select(DEVICE_CONFIGS_SELECT_WITH_SNAPSHOT)
+    .select(DEVICE_CONFIGS_SELECT)
     .eq('deployment_slug', deploymentSlug)
     .eq('is_active', true)
     .order('device_id');
-
-  // Kompatibilitas: DB belum menjalankan migrasi snapshot (Task 11).
-  if (isMissingColumnError(errConfigs)) {
-    const full = await supabase
-      .from('device_configs')
-      .select(DEVICE_CONFIGS_SELECT_FULL)
-      .eq('deployment_slug', deploymentSlug)
-      .eq('is_active', true)
-      .order('device_id');
-    configs = full.data as typeof configs;
-    errConfigs = full.error;
-  }
-  // Kompatibilitas: migrasi parsial (mis. belum ada display_name atau belum ada geo/MAC).
-  if (isMissingColumnError(errConfigs)) {
-    const geoOnly = await supabase
-      .from('device_configs')
-      .select(DEVICE_CONFIGS_SELECT_WITH_GEO_MAC)
-      .eq('deployment_slug', deploymentSlug)
-      .eq('is_active', true)
-      .order('device_id');
-    configs = geoOnly.data;
-    errConfigs = geoOnly.error;
-  }
-  if (isMissingColumnError(errConfigs)) {
-    const baseOnly = await supabase
-      .from('device_configs')
-      .select(DEVICE_CONFIGS_SELECT_BASE)
-      .eq('deployment_slug', deploymentSlug)
-      .eq('is_active', true)
-      .order('device_id');
-    configs = baseOnly.data;
-    errConfigs = baseOnly.error;
-  }
 
   if (errConfigs) throw errConfigs;
 
