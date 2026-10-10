@@ -215,7 +215,7 @@ export default function PublicDashboard() {
       </main>
 
       <footer className="border-t border-border bg-card/80 px-4 py-4 text-center text-xs text-muted-foreground backdrop-blur-sm">
-        © {new Date().getFullYear()} Nawa Inspira Digital · Sistem Informasi Jaga Air
+        © {new Date().getFullYear()} SiJagaKali. All rights reserved. Powered by InspiraLabs.
       </footer>
     </div>
   );
