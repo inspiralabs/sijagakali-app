@@ -6,6 +6,7 @@ import {
   useState,
   ReactNode,
   useCallback,
+  useMemo,
 } from 'react';
 import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -32,7 +33,8 @@ interface LiveDataCtx {
   devices: Device[];
   alerts: AlertEvent[];
   histories: Record<string, WaterReading[]>;
-  lastUpdated: string;
+  /** Waktu data sensor terbaru dari semua perangkat (bukan waktu halaman dimuat); null = belum ada data. */
+  lastUpdated: string | null;
   dataSource: LiveDataSource;
   supabaseError: string | null;
   /** Simpan IP LAN + URL streaming ke Supabase (RPC). */
@@ -47,7 +49,7 @@ const Ctx = createContext<LiveDataCtx>({
   devices: [],
   alerts: [],
   histories: {},
-  lastUpdated: new Date().toISOString(),
+  lastUpdated: null,
   dataSource: 'supabase',
   supabaseError: null,
   updateDeviceCctv: async () => {
@@ -92,7 +94,14 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
   const [devices, setDevices] = useState<Device[]>([]);
   const [alerts, setAlerts] = useState<AlertEvent[]>([]);
   const [histories, setHistories] = useState<Record<string, WaterReading[]>>({});
-  const [lastUpdated, setLastUpdated] = useState<string>(new Date().toISOString());
+  const lastUpdated = useMemo(
+    () =>
+      devices.reduce<string | null>(
+        (max, d) => (d.lastSeen && (!max || Date.parse(d.lastSeen) > Date.parse(max)) ? d.lastSeen : max),
+        null,
+      ),
+    [devices],
+  );
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
   const devicesRef = useRef<Device[]>([]);
   useEffect(() => {
@@ -115,7 +124,6 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
         setDevices(d);
         setHistories(h);
         setAlerts(alertHistory);
-        setLastUpdated(new Date().toISOString());
         setSupabaseError(null);
       })
       .catch((e: unknown) => {
@@ -169,7 +177,6 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
                 setDevices(d);
                 setHistories(h);
                 setAlerts(alertHistory);
-                setLastUpdated(new Date().toISOString());
                 setSupabaseError(null);
               } catch (e: unknown) {
                 const msg = e instanceof Error ? e.message : String(e);
@@ -252,7 +259,6 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
             return copy;
           });
 
-          setLastUpdated(new Date().toISOString());
         }
       )
       .on(
@@ -266,19 +272,25 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
         (payload) => {
           const row = payload.new as Record<string, unknown>;
           const path = (row.last_snapshot_path as string | null) ?? null;
-          if (!path) return;
           const deviceId = String(row.device_id ?? '');
           setDevices((prev) =>
-            prev.map((d) =>
-              d.id === deviceId && d.cctvImagePath !== path
+            prev.map((d) => {
+              if (d.id !== deviceId) return d;
+              // Heartbeat & galat sensor (ditulis mqtt-collector) menentukan data masih terkini atau tidak.
+              const next: Device = {
+                ...d,
+                heartbeatAt: (row.last_seen_at as string | null) ?? null,
+                sensorError: (row.last_error as string | null) ?? null,
+              };
+              return path && d.cctvImagePath !== path
                 ? {
-                    ...d,
+                    ...next,
                     cctvImagePath: path,
                     cctvCapturedAt: (row.last_snapshot_at as string | null) ?? d.cctvCapturedAt,
                     cctvSignedUrl: null,
                   }
-                : d
-            )
+                : next;
+            })
           );
         }
       )
@@ -320,7 +332,6 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
       setDevices(d);
       setHistories(h);
       setAlerts(alertHistory);
-      setLastUpdated(new Date().toISOString());
       setSupabaseError(null);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -360,7 +371,6 @@ function SupabaseLiveDataProvider({ children }: { children: ReactNode }) {
             : d
         )
       );
-      setLastUpdated(new Date().toISOString());
       toast.success('Konfigurasi CCTV disimpan.');
     },
     [deploymentSlug]

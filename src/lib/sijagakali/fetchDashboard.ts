@@ -4,7 +4,7 @@ import { getStatusFromLevel } from '@/lib/types';
 
 const HISTORY_CAP = 144;
 const DEVICE_CONFIGS_SELECT_BASE =
-  'deployment_slug, device_id, location_name, sensor_height_cm, read_interval_sec, threshold_waspada_cm, threshold_siaga_cm, threshold_bahaya_cm, last_seen_at, cctv_local_ip, stream_playback_url';
+  'deployment_slug, device_id, location_name, sensor_height_cm, read_interval_sec, threshold_waspada_cm, threshold_siaga_cm, threshold_bahaya_cm, last_seen_at, last_error, cctv_local_ip, stream_playback_url';
 const DEVICE_CONFIGS_SELECT =
   `${DEVICE_CONFIGS_SELECT_BASE}, mac_address, latitude, longitude, display_name, bmkg_adm4, snapshot_interval_min, last_snapshot_path, last_snapshot_at`;
 
@@ -25,6 +25,7 @@ type DeviceConfigRow = {
   threshold_siaga_cm: number;
   threshold_bahaya_cm: number;
   last_seen_at: string | null;
+  last_error?: string | null;
   cctv_local_ip?: string | null;
   stream_playback_url?: string | null;
   mac_address?: string | null;
@@ -115,7 +116,9 @@ function mapRowToDevice(
     rssi: latest?.rssi ?? 0,
     reportInterval: c.read_interval_sec,
     status,
-    lastSeen: latest?.recorded_at ?? c.last_seen_at ?? new Date().toISOString(),
+    lastSeen: latest?.recorded_at ?? '',
+    heartbeatAt: c.last_seen_at,
+    sensorError: c.last_error ?? null,
     cctvLocalIp: c.cctv_local_ip ?? undefined,
     cctvUrl: c.stream_playback_url ?? undefined,
     // Foto terbaru per device (kejadian/berkala/manual); fallback ke reading lama.

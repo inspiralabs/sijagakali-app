@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { toast } from 'sonner';
 
 interface TopBarProps {
-  lastUpdated: string;
+  lastUpdated: string | null;
   onLogout?: () => void;
   showSidebarTrigger?: boolean;
 }
@@ -51,7 +51,7 @@ export function TopBar({ lastUpdated, onLogout, showSidebarTrigger }: TopBarProp
           <span className="hidden sm:inline">LIVE</span>
         </div>
         <span className="text-xs text-muted-foreground hidden md:inline mr-1">
-          Update: {formatWIB(lastUpdated)}
+          Data terakhir: {lastUpdated ? formatWIB(lastUpdated) : '—'}
         </span>
 
         {/* Admin: siren control + duration */}
