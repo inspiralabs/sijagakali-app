@@ -80,7 +80,7 @@ export default function PublicDashboard() {
               <span className="hidden sm:inline">LIVE</span>
             </div>
             <span className="hidden text-xs text-muted-foreground md:inline">
-              Update: {formatWIB(lastUpdated)}
+              Data terakhir: {lastUpdated ? formatWIB(lastUpdated) : '—'}
             </span>
             <Tooltip>
               <TooltipTrigger asChild>

@@ -29,7 +29,12 @@ export interface Device {
   rssi: number;
   reportInterval: number;
   status: StatusLevel;
+  /** Waktu data sensor terakhir (`sensor_readings.recorded_at`); kosong = belum ada data. */
   lastSeen: string;
+  /** Heartbeat terakhir perangkat (`device_configs.last_seen_at`). */
+  heartbeatAt?: string | null;
+  /** Galat sensor dari heartbeat (`device_configs.last_error`); null = sensor terbaca. */
+  sensorError?: string | null;
   /** IP kamera di LAN lapangan (referensi dokumentasi / node). */
   cctvLocalIp?: string;
   /** URL playback live (HLS/WebRTC/dummy); kolom `stream_playback_url`. */
@@ -67,6 +72,9 @@ export const STATUS_CONFIG: Record<StatusLevel, { label: string; siagaLabel: str
   siaga: { label: 'Siaga', siagaLabel: 'Siaga 2', color: 'status-siaga', hex: '#D85A30' },
   bahaya: { label: 'Bahaya', siagaLabel: 'Siaga 1', color: 'status-bahaya', hex: '#A32D2D' },
 };
+
+/** Warna status saat data belum diperbarui: warna status lama tidak boleh tampak seperti kondisi terkini. */
+export const STALE_HEX = '#8A939B';
 
 export function getStatusFromLevel(level: number, threshold: DeviceThreshold): StatusLevel {
   if (level >= threshold.awas) return 'bahaya';

@@ -1,7 +1,8 @@
 import Wave from 'react-wavify';
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Device, STATUS_CONFIG } from '@/lib/types';
+import { Device, STATUS_CONFIG, STALE_HEX } from '@/lib/types';
+import { useDataFreshness } from '@/lib/deviceStatus';
 import { StatusBadge } from './StatusBadge';
 import { Card } from '@/components/ui/card';
 import { Camera, Video, VideoOff, Settings } from 'lucide-react';
@@ -162,6 +163,8 @@ export function DeviceCard({
   className,
 }: DeviceCardProps) {
   const config = STATUS_CONFIG[device.status];
+  const freshness = useDataFreshness(device);
+  const hex = freshness.current ? config.hex : STALE_HEX;
   const levelPct = Math.min((device.waterLevel / device.maxCapacity) * 100, 100);
   const waveHeight = Math.max(10, levelPct * 0.6);
   const waveSpeed = device.status === 'bahaya' ? 0.15 : device.status === 'siaga' ? 0.2 : 0.3;
@@ -175,16 +178,22 @@ export function DeviceCard({
         publicView && 'flex h-full min-h-0 flex-col shadow-sm',
         className
       )}
-      style={{ borderLeftColor: config.hex }}
+      style={{ borderLeftColor: hex }}
     >
       {/* Header */}
       <div className="flex shrink-0 items-start justify-between p-4 pb-2">
         <div>
           <h3 className="font-semibold text-foreground">{device.name}</h3>
           <p className="text-xs text-muted-foreground">{device.location}</p>
+          <p
+            className={cn('mt-0.5 text-[11px]', freshness.current ? 'text-muted-foreground' : 'font-medium')}
+            style={freshness.current ? undefined : { color: STALE_HEX }}
+          >
+            {freshness.label}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <StatusBadge status={device.status} />
+          <StatusBadge status={device.status} stale={!freshness.current} />
           {!publicView && device.deploymentSlug && (
             <Link
               to={`/devices/${encodeURIComponent(device.id)}/settings`}
@@ -209,7 +218,7 @@ export function DeviceCard({
         </div>
         <div className="absolute bottom-0 left-0 right-0" style={{ height: `${levelPct}%` }}>
           <Wave
-            fill={config.hex + 'AA'}
+            fill={hex + 'AA'}
             paused={false}
             style={{ display: 'flex', height: '100%' }}
             options={{

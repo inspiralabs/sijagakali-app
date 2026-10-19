@@ -10,6 +10,7 @@ import type { WeatherBatchItem } from '@/lib/sijagakali/fetchWeather';
 import { findWeatherItem, WeatherDeviceInline } from '@/components/WeatherDeviceInline';
 import { WaterChart } from '@/components/WaterChart';
 import { StatusBadge } from './StatusBadge';
+import { useDataFreshness } from '@/lib/deviceStatus';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,6 +45,7 @@ function CctvTile({
   histories,
 }: CctvTileProps) {
   const weatherItem = findWeatherItem(weatherItems, device.id);
+  const freshness = useDataFreshness(device);
   const [tab, setTab] = useState<'snapshot' | 'live'>('snapshot');
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerTab, setViewerTab] = useState<'snapshot' | 'live'>('snapshot');
@@ -245,7 +247,7 @@ function CctvTile({
           }`}
         >
           <div className="flex min-w-0 items-center gap-2">
-            <StatusBadge status={device.status} />
+            <StatusBadge status={device.status} stale={!freshness.current} />
             <span
               className={`truncate font-semibold text-foreground ${
                 emphasis ? 'text-sm' : 'text-xs'
@@ -346,7 +348,7 @@ function CctvTile({
             emphasis ? 'px-3.5 py-2 text-[11px] sm:px-4 sm:text-xs' : 'px-3 py-1.5 text-[10px]'
           }`}
         >
-          <span>Level air saat ini:</span>
+          <span>{freshness.current ? 'Level air saat ini:' : 'Level air terakhir:'}</span>
           <span className="font-bold text-foreground">{device.waterLevel} cm</span>
         </div>
       </Card>
